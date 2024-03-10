@@ -6,6 +6,10 @@
 ---
 **Imię i nazwisko:**
 
+- Premysław Spyra
+
+- Piotr Urbańczyk
+
 --- 
 
 
@@ -79,7 +83,9 @@ from products p;
 Jaka jest są podobieństwa, jakie różnice pomiędzy grupowaniem danych a działaniem funkcji okna?
 
 ```
--- wyniki ...
+Wykonanie zapytania z funkcją agregującą avg zwraca jednorazowo jej wartość dla wszystkich wierszy tabeli products (28.866363636363637). Wykonanie tego zapytania w klauzuli GROUP BY categoryid zwraca jednorazowo osiem wartości tej funkcji (37.979166666666664, 23.0625, 25.16, 28.73, 20.25, 54.00666666666667, 32.37, 20.6825 -- dla ośmiu kategorii produktów).
+
+Wykonanie zapytania z funkcją okna zwraca zagregowaną wartość funkcji (tę samą -- 28.866363636363637) dla każdego przetwarzanego przez zapytanie wiersza (w tym wypadku 77-miokrotnie). Wykonanie zapytania z funkcją okna partycjonowanym categoryid 77 razy zwraca osiem wartości (ponownie tych samych -- 37.979166666666664, 23.0625, 25.16, 28.73, 20.25, 54.00666666666667, 32.37, 20.6825): dla każdego przetwarzanego wiersza podaje wartość funkcji dla wszystkich elementów mających ten sam categoryid, co element znajdujący się w tym wierszu.
 ```
 
 ---
