@@ -213,7 +213,7 @@ funkcja okna
 join
 ![w:700](_img/sqlite-join-plan.png)
 
-W MS SQL Server, mimo iż wykonywanie funkcji okna na grafie wygląda na nieco bardziej skomplikowane, w rzeczywistoście jest szybsze od zapytania wykorzystującego podzapytanie i joina (które mają zbliżone czas wykonania)
+W MS SQL Server, mimo iż wykonywanie funkcji okna na grafie wygląda na nieco bardziej skomplikowane, w rzeczywistoście jest szybsze od zapytania wykorzystującego podzapytanie i joina (które mają zbliżone czasy wykonywania)
 
 W PostgreSQL wersje wykorzystujące podzapytanie i funkcję okna zarówno prezentują się podobnie na grafie, jak i wykonują się w zbliżonych czasach. Na schemacie na bardziej skomplikowane wygląda zapytanie z joinem, które też wykonuje się nieco dłużej.
 
@@ -288,13 +288,13 @@ funkcja okna
 join
 ![w:700](_img/sqlite2-join.png)
 
-W MS SQL Server, mimo zapytanie z funkcją okna i joinem wykonują się w podobnym czasie. Dużo wolniej wykonuje się wersja z podzapytaniem, która też prezentuje się na bardziej skomplikowaną na schemacie.
+W MS SQL Server zapytanie z funkcją okna i joinem wykonują się w podobnym czasie. Dużo wolniej wykonuje się wersja z podzapytaniem, która też prezentuje się na bardziej skomplikowaną na schemacie.
 
-Podobnie w PostgreSQL wersje wykorzystujące podzapytanie wykonuje się o rząd wielkości dłużej od zapytań wykorzystujących funkcję okna i joina. Najprostszy diagram ma zapytanie z funkcją okna, w którym od zaputania do wyników wiedzie jedna ścieżka grafu, bez rozgałęzień. 
+Podobnie w PostgreSQL wersje wykorzystujące podzapytanie wykonuje się o rząd wielkości dłużej od zapytań wykorzystujących funkcję okna i joina. Najprostszy diagram ma zapytanie z funkcją okna, w którym od zapytania do wyników wiedzie jedna ścieżka grafu, bez rozgałęzień. 
 
 W SQLite analiza dała mniej informacji, niż w przypadku pozostałych dwóch SZBD. Na grafie najprostsze drzewo prezentuje zapytanie z joinem, które rezem z wersją z podzapytaniem mają porównywalny czas wykonania. Wersja z funkcją okna wykonuje się dłużej.
 
-Interesujący jest takze porządek wyników. Mimio braku klazuli `order by`, SQLite przy pozapytaniu a PostgreSQL przy podzapytaniu i joinie posortowało wyniki wg `ProductId`. W MS SQL Server wynikiwszystkich zapytań są w tej samej, lecz nieleksykalnej kolejności.
+Interesujący jest takze porządek wyników. Mimio braku klazuli `order by`, SQLite przy pozapytaniu a PostgreSQL przy podzapytaniu i joinie wyniki zostały posortowane wg `ProductId`. W MS SQL Server wyniki wszystkich zapytań (podzapytanie, funkcja okna, join) są w tej samej, lecz nieleksykalnej kolejności.
 
 ---
 # Zadanie 5 - przygotowanie
