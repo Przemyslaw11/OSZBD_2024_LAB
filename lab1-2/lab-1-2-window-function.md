@@ -215,10 +215,9 @@ join
 
 W MS SQL Server, mimo iż wykonywanie funkcji okna na grafie wygląda na nieco bardziej skomplikowane, w rzeczywistoście jest szybsze od zapytania wykorzystującego podzapytanie i joina (które mają zbliżone czas wykonania)
 
-W PostgreSQL wersje wykorzystujące podzapytanie i funkcję okna zarówno prezentują się podobnie na grafie, jak i wykonują się w zbliżonych czasach. Na bardziej skomplikowane wygląda zapytanie z joinem, które też wykonuje się nieco dłużej.
+W PostgreSQL wersje wykorzystujące podzapytanie i funkcję okna zarówno prezentują się podobnie na grafie, jak i wykonują się w zbliżonych czasach. Na schemacie na bardziej skomplikowane wygląda zapytanie z joinem, które też wykonuje się nieco dłużej.
 
-W SQLite analiza dała mniej informacji, niż w pozostałych dwóch SZBD. Na grafie wersje wykorzystujące podzapytanie i funkcję okna zarówno prezentują się podobnie. Wersja z joinem ma dodatkowy węzeł.
-
+W SQLite analiza dała mniej informacji, niż w przypadku pozostałych dwóch SZBD. Na grafie wersje wykorzystujące podzapytanie i funkcję okna zarówno prezentują się podobnie. Wersja z joinem ma dodatkowy węzeł.
 
 ---
 
@@ -233,9 +232,69 @@ Napisz polecenie z wykorzystaniem podzapytania, join'a oraz funkcji okna. Porów
 Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
--- wyniki ...
-```
+--podzapytanie
+select p.productid, p.ProductName, p.unitprice,
+    (select avg(unitprice) from products where CategoryID = p.CategoryID) as avgprice
+from products p
+where p.UnitPrice > (select avg(unitprice) from products where CategoryID = p.CategoryID);
 
+--funkcja okna
+with av as (select p.productid,
+                   p.ProductName,
+                   p.unitprice,
+                   avg(unitprice) over (partition by CategoryID) as avgprice
+            from products p)
+select * from av
+where
+    unitprice > avgprice;
+
+--join
+with av as (select CategoryID, avg(unitprice) as avgprice from products group by CategoryID)
+select p.productid, p.ProductName, p.unitprice,
+    av.avgprice
+from products p
+join av on av.CategoryID = p.CategoryID and p.unitprice > av.avgprice;
+```
+MS SQL Server
+
+podzapytanie
+![w:700](_img/mssql2-podzapytanie.png)
+
+funkcja okna
+![w:700](_img/mssql2-okno.png)
+
+join
+![w:700](_img/mssql2-join.png)
+
+PostgreSQL
+
+podzapytanie
+![w:700](_img/postgres2-podzapytanie.png)
+
+funkcja okna
+![w:700](_img/postgres2-okno.png)
+
+join
+![w:700](_img/postgres2-join.png)
+
+SQLite
+
+podzapytanie
+![w:700](_img/sqlite2-podzapytanie.png)
+
+funkcja okna
+![w:700](_img/sqlite2-okno.png)
+
+join
+![w:700](_img/sqlite2-join.png)
+
+W MS SQL Server, mimo zapytanie z funkcją okna i joinem wykonują się w podobnym czasie. Dużo wolniej wykonuje się wersja z podzapytaniem, która też prezentuje się na bardziej skomplikowaną na schemacie.
+
+Podobnie w PostgreSQL wersje wykorzystujące podzapytanie wykonuje się o rząd wielkości dłużej od zapytań wykorzystujących funkcję okna i joina. Najprostszy diagram ma zapytanie z funkcją okna, w którym od zaputania do wyników wiedzie jedna ścieżka grafu, bez rozgałęzień. 
+
+W SQLite analiza dała mniej informacji, niż w przypadku pozostałych dwóch SZBD. Na grafie najprostsze drzewo prezentuje zapytanie z joinem, które rezem z wersją z podzapytaniem mają porównywalny czas wykonania. Wersja z funkcją okna wykonuje się dłużej.
+
+Interesujący jest takze porządek wyników. Mimio braku klazuli `order by`, SQLite przy pozapytaniu a PostgreSQL przy podzapytaniu i joinie posortowało wyniki wg `ProductId`. W MS SQL Server wynikiwszystkich zapytań są w tej samej, lecz nieleksykalnej kolejności.
 
 ---
 # Zadanie 5 - przygotowanie
