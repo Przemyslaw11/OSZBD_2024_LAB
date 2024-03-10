@@ -82,11 +82,14 @@ from products p;
 
 Jaka jest są podobieństwa, jakie różnice pomiędzy grupowaniem danych a działaniem funkcji okna?
 
-```
-Wykonanie zapytania z funkcją agregującą avg zwraca jednorazowo jej wartość dla wszystkich wierszy tabeli products (28.866363636363637). Wykonanie tego zapytania w klauzuli GROUP BY categoryid zwraca jednorazowo osiem wartości tej funkcji (37.979166666666664, 23.0625, 25.16, 28.73, 20.25, 54.00666666666667, 32.37, 20.6825 -- dla ośmiu kategorii produktów).
+> ```
+Wykonanie zapytania z funkcją agregującą avg zwraca jednorazowo jej wartość obliczoną dla wszystkich wierszy tabeli products (28.8663). Wynik jest zagregowany do pojedynczego wiersza. Wykonanie tego zapytania w klauzuli GROUP BY categoryid zwraca jednorazowo osiem wartości tej funkcji (37.9791, 23.0625, 25.1600, 28.7300, 20.2500, 54.0066, 32.3700, 20.6825). Wynik jest zatem zagregowany dla wierszy zgrupowanych według ośmiu kategorii.
 
-Wykonanie zapytania z funkcją okna zwraca zagregowaną wartość funkcji (tę samą -- 28.866363636363637) dla każdego przetwarzanego przez zapytanie wiersza (w tym wypadku 77-miokrotnie). Wykonanie zapytania z funkcją okna partycjonowanym categoryid 77 razy zwraca osiem wartości (ponownie tych samych -- 37.979166666666664, 23.0625, 25.16, 28.73, 20.25, 54.00666666666667, 32.37, 20.6825): dla każdego przetwarzanego wiersza podaje wartość funkcji dla wszystkich elementów mających ten sam categoryid, co element znajdujący się w tym wierszu.
+Wykonanie zapytania z funkcją okna zwraca zagregowaną wartość funkcji (tę samą -- 28.8663) dla każdego przetwarzanego przez zapytanie wiersza (w tym wypadku 77-miokrotnie). Wykonanie zapytania z funkcją okna partycjonowanym categoryid 77 razy zwraca osiem wartości (ponownie tych samych -- 37.9791, 23.0625, 25.1600, 28.7300, 20.2500, 54.0066, 32.3700, 20.6825): dla każdego przetwarzanego wiersza podaje wartość funkcji dla wszystkich elementów mających ten sam categoryid, co element znajdujący się w przetwarzanym wierszu. Funkcja okna jest zatem wyliczana dla każdego wiersza.
 ```
+
+
+
 
 ---
 # Zadanie 2 - obserwacja
@@ -112,6 +115,29 @@ where productid < 10
 Jaka jest różnica? Czego dotyczy warunek w każdym z przypadków? Napisz polecenie równoważne 
 - 1) z wykorzystaniem funkcji okna. Napisz polecenie równoważne 
 - 2) z wykorzystaniem podzapytania
+
+> ```
+Oba zapytania zwracają 9 wierszy zawierjących id, nazwy oraz ceny produktów, których id jest mniejsze od 10. Różnią się jednak kolumną zawierającą wartość funkcji avg. Agregacja wywołana w podzapytaniu zwróciła wartość średnią dla wszystkich produktów (wszystkich wierszy w tabeli). Agregacja użyta w funkcji okna zwróciła wartość średnią dla wierszy ograniczonych warunkiem where productid < 10.
+
+W przypadku 1) warunek dotyczy wyłącznie zapytania głównego/zewnętrznego, w przypadku 2) warunek dotyczy także argumentów funkcji okna.
+```
+
+```sql
+--1) (równoważne 1 powyżej)
+with av as (select p.productid,
+                   p.ProductName,
+                   p.unitprice,
+                   avg(p.unitprice) over () as avgprice
+            from products p)
+select * from av
+where productid < 10;
+
+--2) (równoważne 2 powyżej)
+select p.productid, p.ProductName, p.unitprice,
+    (select avg(unitprice) from products where productid < 10) as avgprice
+from products p
+where productid < 10;
+```
 
 # Zadanie 3
 
