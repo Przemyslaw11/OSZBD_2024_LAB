@@ -1,4 +1,3 @@
-
 # SQL - Funkcje okna (Window functions) 
 
 # Lab 1-2
@@ -82,11 +81,11 @@ from products p;
 
 Jaka jest są podobieństwa, jakie różnice pomiędzy grupowaniem danych a działaniem funkcji okna?
 
-<code>
+```
 Wykonanie zapytania z funkcją agregującą avg zwraca jednorazowo jej wartość obliczoną dla wszystkich wierszy tabeli products (28.8663). Wynik jest zagregowany do pojedynczego wiersza. Wykonanie tego zapytania w klauzuli GROUP BY categoryid zwraca jednorazowo osiem wartości tej funkcji (37.9791, 23.0625, 25.1600, 28.7300, 20.2500, 54.0066, 32.3700, 20.6825). Wynik jest zatem zagregowany dla wierszy zgrupowanych według ośmiu kategorii.
 
 Wykonanie zapytania z funkcją okna zwraca zagregowaną wartość funkcji (tę samą -- 28.8663) dla każdego przetwarzanego przez zapytanie wiersza (w tym wypadku 77-miokrotnie). Wykonanie zapytania z funkcją okna partycjonowanym categoryid 77 razy zwraca osiem wartości (ponownie tych samych -- 37.9791, 23.0625, 25.1600, 28.7300, 20.2500, 54.0066, 32.3700, 20.6825): dla każdego przetwarzanego wiersza podaje wartość funkcji dla wszystkich elementów mających ten sam categoryid, co element znajdujący się w przetwarzanym wierszu. Funkcja okna jest zatem wyliczana dla każdego wiersza.
-</code>
+```
 
 
 
@@ -117,14 +116,11 @@ Jaka jest różnica? Czego dotyczy warunek w każdym z przypadków? Napisz polec
 - 2) z wykorzystaniem podzapytania
 
 
-<code>
+```
 Oba zapytania zwracają 9 wierszy zawierjących id, nazwy oraz ceny produktów, których id jest mniejsze od 10. Różnią się jednak kolumną zawierającą wartość funkcji avg. Agregacja wywołana w podzapytaniu zwróciła wartość średnią dla wszystkich produktów (wszystkich wierszy w tabeli). Agregacja użyta w funkcji okna zwróciła wartość średnią dla wierszy ograniczonych warunkiem where productid < 10.
-</code>
 
-<code>
 W przypadku 1) warunek dotyczy wyłącznie zapytania głównego/zewnętrznego, w przypadku 2) warunek dotyczy także argumentów funkcji okna.
-</code>
-
+```
 
 
 ```sql
@@ -165,10 +161,64 @@ W DataGrip użyj opcji Explain Plan/Explain Analyze
 
 ![w:700](_img/window-3.png)
 
-
+Odpowiedż:
 ```sql
--- wyniki ...
+--podzapytanie
+select p.productid, p.ProductName, p.unitprice,
+    (select avg(unitprice) from products) as avgprice
+from products p;
+
+--funkcja okna
+select p.productid, p.ProductName, p.unitprice,
+    avg(unitprice) over () as avgprice
+from products p;
+
+--join
+with av as (select avg(unitprice) as avgprice from products)
+select p.productid, p.ProductName, p.unitprice,
+    av.avgprice
+from products p
+cross join av;
 ```
+MS SQL Server
+
+podzapytanie
+![w:700](_img/mssql-podzapytanie-plan.png)
+
+funkcja okna
+![w:700](_img/mssql-okno-plan.png)
+
+join
+![w:700](_img/mssql-join-plan.png)
+
+PostgreSQL
+
+podzapytanie
+![w:700](_img/postgres-podzapytanie-plan.png)
+
+funkcja okna
+![w:700](_img/postgres-okno-plan.png)
+
+join
+![w:700](_img/postgres-join-plan.png)
+
+SQLite
+
+podzapytanie
+![w:700](_img/sqlite-podzapytanie-plan.png)
+
+funkcja okna
+![w:700](_img/sqlite-okno-plan.png)
+
+join
+![w:700](_img/sqlite-join-plan.png)
+
+W MS SQL Server, mimo iż wykonywanie funkcji okna na grafie wygląda na nieco bardziej skomplikowane, w rzeczywistoście jest szybsze od zapytania wykorzystującego podzapytanie i joina (które mają zbliżone czas wykonania)
+
+W PostgreSQL wersje wykorzystujące podzapytanie i funkcję okna zarówno prezentują się podobnie na grafie, jak i wykonują się w zbliżonych czasach. Na bardziej skomplikowane wygląda zapytanie z joinem, które też wykonuje się nieco dłużej.
+
+W SQLite analiza dała mniej informacji, niż w pozostałych dwóch SZBD. Na grafie wersje wykorzystujące podzapytanie i funkcję okna zarówno prezentują się podobnie. Wersja z joinem ma dodatkowy węzeł.
+
 
 ---
 
