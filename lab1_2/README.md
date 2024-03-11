@@ -480,8 +480,77 @@ Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 
 ```sql
---- wyniki ...
+-- podzapytania
+SELECT
+    ph.id,ph.productid,ph.productname,ph.unitprice,
+    (SELECT AVG(unitprice) FROM product_history WHERE categoryid = ph.categoryid) AS avg_category_price,
+    (SELECT SUM(value) FROM product_history WHERE categoryid = ph.categoryid) AS total_category_value,
+    (SELECT AVG(unitprice) FROM product_history WHERE productid = ph.productid AND extract(year from date) = extract(year from ph.date)) AS avg_product_price_per_year,
+    (SELECT SUM(value) FROM product_history WHERE categoryid = ph.categoryid) AS total_category_value_window
+FROM
+    product_history ph;
+
+-- join
+SELECT
+    ph.id,ph.productid,ph.productname, ph.unitprice,
+    AVG(pc.unitprice) AS avg_category_price,
+    SUM(pc.value) AS total_category_value,
+    AVG(ph.unitprice) AS avg_product_price_per_year,
+    SUM(ph.value) AS total_category_value_window
+FROM
+    product_history ph
+JOIN
+    product_history pc ON ph.categoryid = pc.categoryid
+GROUP BY
+    ph.id,ph.productid,ph.productname,ph.unitprice;
+
+-- funkcje okna
+SELECT
+    ph.id,ph.productid,ph.productname,ph.unitprice,
+    AVG(ph.unitprice) OVER (PARTITION BY ph.categoryid) AS avg_category_price,
+    SUM(ph.value) OVER (PARTITION BY ph.categoryid) AS total_category_value,
+    AVG(ph.unitprice) OVER (PARTITION BY ph.productid, extract(year from ph.date)) AS avg_product_price_per_year,
+    SUM(ph.value) OVER (PARTITION BY ph.categoryid) AS total_category_value_window
+FROM
+    product_history ph;
 ```
+
+PostgreSQL
+
+podzapytanie:
+
+join:
+
+funkcja okna:
+![alt text](_img/_report/image33.png)
+
+Koszty wykonania od najmniejszego:
+Plany wykonania od najmniejszego stopnia złożenia:
+
+MS SQL Server
+
+podzapytanie:
+
+join:
+
+funkcja okna:
+![alt text](_img/_report/image34.png)
+
+Koszty wykonania od najmniejszego: 
+Plany wykonania od najmniejszego stopnia złożenia: 
+
+SQLite
+
+podzapytanie:
+
+join:
+
+funkcja okna:
+
+
+Brak informacji o koszcie wykonania.
+Plany wykonania od najmniejszego stopnia złożenia:
+
 
 ---
 # Zadanie 8 - obserwacja
@@ -497,9 +566,9 @@ select productid, productname, unitprice, categoryid,
     dense_rank() over(partition by categoryid order by unitprice desc) as denserankprice  
 from products;
 ```
-
-```sql
---- wyniki ...
+![alt text](_img/_report/image35.png)
+```
+ Widać, że funkcje te..
 ```
 
 
@@ -508,7 +577,28 @@ Zadanie
 Spróbuj uzyskać ten sam wynik bez użycia funkcji okna
 
 ```sql
---- wyniki ...
+SELECT
+    p.productid,
+    p.productname,
+    p.unitprice,
+    p.categoryid,
+    (
+        SELECT COUNT(*)
+        FROM products p2
+        WHERE p2.categoryid = p.categoryid AND p2.unitprice >= p.unitprice
+    ) AS rowno,
+    (
+        SELECT COUNT(DISTINCT p2.unitprice) + 1
+        FROM products p2
+        WHERE p2.categoryid = p.categoryid AND p2.unitprice > p.unitprice
+    ) AS rankprice,
+    (
+        SELECT COUNT(DISTINCT p2.unitprice)
+        FROM products p2
+        WHERE p2.categoryid = p.categoryid AND p2.unitprice >= p.unitprice
+    ) AS denserankprice
+FROM products p;
+
 ```
 
 
@@ -528,7 +618,33 @@ Dla każdego produktu, podaj 4 najwyższe ceny tego produktu w danym roku. Zbió
 Uporządkuj wynik wg roku, nr produktu, pozycji w rankingu
 
 ```sql
---- wyniki ...
+WITH RankedPrices AS (
+    SELECT 
+        YEAR(date) AS year,
+        productid,
+        productname,
+        unitprice,
+        date,
+        ROW_NUMBER() OVER (PARTITION BY productid, YEAR(date) ORDER BY unitprice DESC) AS price_rank
+    FROM 
+        product_history
+)
+
+SELECT 
+    year,
+    productid,
+    productname,
+    unitprice,
+    date,
+    price_rank
+FROM 
+    RankedPrices
+WHERE 
+    price_rank <= 4
+ORDER BY 
+    year,
+    productid,
+    price_rank;
 ```
 
 
@@ -536,7 +652,31 @@ Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czas
 
 
 ```sql
---- wyniki ...
+SELECT 
+    YEAR(ph1.date) AS year,
+    ph1.productid,
+    ph1.productname,
+    ph1.unitprice,
+    ph1.date,
+    COUNT(*) AS price_rank
+FROM 
+    product_history ph1
+JOIN 
+    product_history ph2 ON ph1.productid = ph2.productid
+    AND YEAR(ph1.date) = YEAR(ph2.date)
+    AND ph1.unitprice <= ph2.unitprice
+GROUP BY 
+    YEAR(ph1.date),
+    ph1.productid,
+    ph1.productname,
+    ph1.unitprice,
+    ph1.date
+HAVING 
+    COUNT(*) <= 4
+ORDER BY 
+    YEAR(ph1.date),
+    ph1.productid,
+    price_rank;
 ```
 
 ---
@@ -567,19 +707,52 @@ select * from t
 where productid = 1 and year(date) = 2022  
 order by date;
 ```
+pierwszy select:
+![alt text](_img/_report/image36.png)
+drugi select:
+![alt text](_img/_report/image37.png)
 
 ```sql
--- wyniki ...
+Zarówno LEAD() jak i LAG() zwracają wartości, które liczone są na podstawie sąsiednich wierszy.
+ LEAD() zwraca wiersz, który pojawia się za nim (posiada indeks większy o 1). Nie musimy w ten sposób używać skomplikowanych podzapytań ani self-join, aby zwrócić następnika danego wiersza. 
+ LAG() zwraca wiersz, który pojawia się przed nim (posiada indeks mnniejszy o 1)
+
+ Drugi select uzupełnia nam miejsce null w pierwszym wierszu, ponieważ ...
 ```
-
-
 Zadanie
 
 Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
--- wyniki ...
+SELECT 
+    ph.productid,
+    ph.productname,
+    ph.categoryid,
+    ph.date,
+    ph.unitprice,
+    prev.unitprice AS previousprodprice,
+    next.unitprice AS nextprodprice
+FROM 
+    product_history ph
+LEFT JOIN 
+    product_history prev ON ph.productid = prev.productid
+    AND ph.date > prev.date
+LEFT JOIN 
+    product_history next ON ph.productid = next.productid
+    AND ph.date < next.date
+WHERE 
+    ph.productid = 1
+    AND YEAR(ph.date) = 2022
+ORDER BY 
+    ph.date;
+
 ```
+MS SQL Server
+![alt text](_img/_report/image38.png)
+
+PostgreSQL
+
+\> 20min
 
 ---
 # Zadanie 11
@@ -597,7 +770,37 @@ Zbiór wynikowy powinien zawierać:
 - wartość poprzedniego zamówienia danego klienta.
 
 ```sql
--- wyniki ...
+WITH PreviousOrder AS (
+    SELECT
+        c.CompanyName,
+        o.orderid,
+        o.orderdate,
+        SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight AS order_value,
+        LAG(o.orderid) OVER (PARTITION BY o.customerid ORDER BY o.orderdate) AS previous_order_id,
+        LAG(o.orderdate) OVER (PARTITION BY o.customerid ORDER BY o.orderdate) AS previous_order_date,
+        LAG(SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight) OVER (PARTITION BY o.customerid ORDER BY o.orderdate) AS previous_order_value
+    FROM
+        orders o
+    INNER JOIN
+        customers c ON o.customerid = c.customerid
+    LEFT JOIN
+        "Order Details" od ON o.orderid = od.orderid
+    GROUP BY
+        c.CompanyName, o.orderid, o.orderdate, o.freight, o.customerid
+)
+
+SELECT
+    CompanyName,
+    orderid,
+    orderdate,
+    order_value,
+    previous_order_id,
+    previous_order_date,
+    previous_order_value
+FROM
+    PreviousOrder
+ORDER BY
+    orderdate;
 ```
 
 
@@ -617,9 +820,10 @@ order by unitprice desc) last
 from products  
 order by categoryid, unitprice desc;
 ```
-
+![alt text](_img/_report/image39.png)
 ```sql
--- wyniki ...
+first_value() zwraca pierwszą wartość ze zbioru uporządkowanych wartości.
+last_value() zwraca ostatnią wartość ze zbioru uporządkowanych wartości. 
 ```
 
 Zadanie
@@ -627,7 +831,41 @@ Zadanie
 Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
--- wyniki ...
+SELECT 
+    p.productid,
+    p.productname,
+    p.unitprice,
+    p.categoryid,
+    first_product.first AS first,
+    last_product.last AS last
+FROM 
+    products p
+JOIN (
+    SELECT 
+        categoryid,
+        MAX(unitprice) AS max_unitprice,
+        MIN(unitprice) AS min_unitprice,
+        MAX(productname) AS first,
+        MIN(productname) AS last
+    FROM 
+        products
+    GROUP BY 
+        categoryid
+) AS first_product ON p.categoryid = first_product.categoryid AND p.unitprice = first_product.max_unitprice
+JOIN (
+    SELECT 
+        categoryid,
+        MAX(unitprice) AS max_unitprice,
+        MIN(unitprice) AS min_unitprice,
+        MAX(productname) AS first,
+        MIN(productname) AS last
+    FROM 
+        products
+    GROUP BY 
+        categoryid
+) AS last_product ON p.categoryid = last_product.categoryid AND p.unitprice = last_product.min_unitprice
+ORDER BY 
+    p.categoryid, p.unitprice DESC;
 ```
 
 ---
@@ -652,7 +890,47 @@ Zbiór wynikowy powinien zawierać:
 	- wartość tego zamówienia
 
 ```sql
---- wyniki ...
+WITH OrderSummary AS (
+    SELECT
+        o.customerid,
+        o.orderid,
+        o.orderdate,
+        SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight AS order_value,
+        YEAR(o.orderdate) AS order_year,
+        MONTH(o.orderdate) AS order_month,
+        ROW_NUMBER() OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate), o.customerid ORDER BY SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight ASC) AS min_order_rank,
+        ROW_NUMBER() OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate), o.customerid ORDER BY SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight DESC) AS max_order_rank
+    FROM
+        orders o
+    INNER JOIN
+        orderdetails od ON o.orderid = od.orderid
+    GROUP BY
+        o.customerid, o.orderid, o.orderdate, o.freight
+)
+
+SELECT
+    os.customerid,
+    os.orderid,
+    os.orderdate,
+    os.order_value,
+    min_order.orderid AS min_order_id,
+    min_order.orderdate AS min_order_date,
+    min_order.order_value AS min_order_value,
+    max_order.orderid AS max_order_id,
+    max_order.orderdate AS max_order_date,
+    max_order.order_value AS max_order_value
+FROM
+    OrderSummary os
+LEFT JOIN
+    OrderSummary min_order ON os.order_year = min_order.order_year
+    AND os.order_month = min_order.order_month
+    AND os.customerid = min_order.customerid
+    AND min_order.min_order_rank = 1
+LEFT JOIN
+    OrderSummary max_order ON os.order_year = max_order.order_year
+    AND os.order_month = max_order.order_month
+    AND os.customerid = max_order.customerid
+    AND max_order.max_order_rank = 1;
 ```
 
 ---
@@ -670,22 +948,98 @@ Zbiór wynikowy powinien zawierać:
 - wartość sprzedaży produktu narastające od początku miesiąca
 
 ```sql
--- wyniki ...
+SELECT
+    id,
+    productid,
+    date,
+    value,
+    SUM(value) OVER (PARTITION BY productid, YEAR(date), MONTH(date) ORDER BY date) AS total_sales
+FROM
+    product_history
+ORDER BY
+    productid, date;
 ```
 
 Spróbuj wykonać zadanie bez użycia funkcji okna. Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
--- wyniki ...
+SELECT
+    ph.id,
+    ph.productid,
+    ph.date,
+    ph.value,
+    (
+        SELECT SUM(value)
+        FROM product_history
+        WHERE productid = ph.productid
+        AND YEAR(date) = YEAR(ph.date)
+        AND MONTH(date) = MONTH(ph.date)
+        AND date <= ph.date
+    ) AS total_sales
+FROM
+    product_history ph
+ORDER BY
+    ph.productid, ph.date;
 ```
-
+\ > 8min
 ---
 # Zadanie 15
 
 Wykonaj kilka "własnych" przykładowych analiz. Czy są jeszcze jakieś ciekawe/przydatne funkcje okna (z których nie korzystałeś w ćwiczeniu)? Spróbuj ich użyć w zaprezentowanych przykładach.
 
 ```sql
--- wyniki ...
+-- Ranking produktów ze względu na wartość sprzedaży miesięcznej
+SELECT
+    YEAR(date) AS year,
+    MONTH(date) AS month,
+    productid,
+    SUM(value) AS total_sales,
+    RANK() OVER (PARTITION BY YEAR(date), MONTH(date) ORDER BY SUM(value) DESC) AS sales_rank
+FROM
+    product_history
+GROUP BY
+    YEAR(date), MONTH(date), productid
+ORDER BY
+    YEAR(date), MONTH(date), sales_rank;
+
+-- Znalezienie zmiany wartości sprzedaży w czasie
+SELECT
+    date,
+    productid,
+    value,
+    LAG(value) OVER (PARTITION BY productid ORDER BY date) AS previous_value,
+    value - LAG(value) OVER (PARTITION BY productid ORDER BY date) AS sales_change
+FROM
+    product_history
+ORDER BY
+    productid, date;
+
+-- Analiza trendów sprzedaży produktów w czasie
+
+SELECT
+    date,
+    productid,
+    value,
+    AVG(value) OVER (PARTITION BY productid ORDER BY date ROWS BETWEEN 3 PRECEDING AND 1 FOLLOWING) AS moving_avg_sales
+FROM
+    product_history
+ORDER BY
+    productid, date;
+
+-- Porównanie sprzedaży danego produktu z innymi produktami w tym samym okresie czasu
+
+SELECT
+    date,
+    productid,
+    value,
+    AVG(value) OVER (PARTITION BY productid) AS avg_sales,
+    SUM(value) OVER (PARTITION BY YEAR(date), MONTH(date)) AS total_monthly_sales,
+    (value / SUM(value) OVER (PARTITION BY YEAR(date), MONTH(date))) * 100 AS sales_percentage_of_total
+FROM
+    product_history
+ORDER BY
+    date, productid;
+
 ```
 
 
