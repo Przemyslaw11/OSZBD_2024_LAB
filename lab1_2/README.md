@@ -681,7 +681,6 @@ ORDER BY
 
 ---
 # Zadanie 10 - obserwacja
-
 Funkcje `lag()`, `lead()`
 
 Wykonaj polecenia, zaobserwuj wynik. Jak działają funkcje `lag()`, `lead()`
@@ -831,6 +830,8 @@ Zadanie
 Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
+
+-- wydaje mi sie, ze jest zle
 SELECT 
     p.productid,
     p.productname,
@@ -932,7 +933,8 @@ LEFT JOIN
     AND os.customerid = max_order.customerid
     AND max_order.max_order_rank = 1;
 ```
-
+SQL SERVER
+![alt text](image.png)
 ---
 # Zadanie 14
 
@@ -959,6 +961,7 @@ FROM
 ORDER BY
     productid, date;
 ```
+![alt text](image-1.png)
 
 Spróbuj wykonać zadanie bez użycia funkcji okna. Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
@@ -1014,6 +1017,9 @@ FROM
 ORDER BY
     productid, date;
 
+```
+![alt text](image-2.png)
+```
 -- Analiza trendów sprzedaży produktów w czasie
 
 SELECT
@@ -1025,7 +1031,9 @@ FROM
     product_history
 ORDER BY
     productid, date;
-
+```
+![alt text](image-3.png)
+```
 -- Porównanie sprzedaży danego produktu z innymi produktami w tym samym okresie czasu
 
 SELECT
