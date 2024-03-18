@@ -81,14 +81,11 @@ Jaka jest są podobieństwa, jakie różnice pomiędzy grupowaniem danych a dzia
 ```sql
 Wykonanie zapytania z funkcją agregującą avg zwraca jednorazowo jej wartość obliczoną dla wszystkich wierszy tabeli products (28.8663). Wynik jest zagregowany do pojedynczego wiersza.
 
-
 Wykonanie tego zapytania w klauzuli GROUP BY categoryid zwraca jednorazowo osiem wartości tej funkcji (37.9791, 23.0625, 25.1600, 28.7300, 20.2500, 54.0066, 32.3700, 20.6825). Wynik jest zatem zagregowany dla wierszy zgrupowanych według ośmiu kategorii a wyników jest tyle, ile jest unikalnych CategoryID.
 
-Wykonanie zapytania z funkcją okna zwraca zagregowaną wartość funkcji (tę samą: 28.8663) dla każdego przetwarzanego przez zapytanie wiersza (w tym wypadku 77-miokrotnie). Funkcja okna wykonuje operacje na podzbiorach danych przesuwających się po całym zbiorze. Wynik, czyli średnia cena liczona dla całej tabeli Products przydzielony jest do każdej instancji produktu - wyników będzie tyle, ile jest wierszy w tabeli Products.
+Wykonanie zapytania z funkcją okna zwraca zagregowaną wartość funkcji (tę samą: 28.8663) dla każdego przetwarzanego przez zapytanie wiersza (w tym wypadku 77-miokrotnie). Funkcja okna wykonuje operacje na podzbiorach danych przesuwających się po całym zbiorze. Wynik, czyli średnia cena liczona dla całej tabeli Products przydzielony jest do każdej instancji produktu - wyników jest tyle, ile jest wierszy w tabeli Products.
 
-Wykonanie tego zapytania z funkcją okna partycjonowanym categoryid zwraca w 77-dmiu wierszach osiem wartości (ponownie tych samych: 37.9791, 23.0625, 25.1600, 28.7300, 20.2500, 54.0066, 32.3700, 20.6825): dla każdego przetwarzanego wiersza podaje wartość funkcji dla wszystkich elementów mających ten sam categoryid, co element znajdujący się w przetwarzanym wierszu. Funkcja okna jest zatem wyliczana dla każdego wiersza. Zatem użycie partition by CategoryID sprawia, że średnia cena jest liczona dla poszczególnych CategoryID i przypisywana do wszystkich produktów należących do danej kategorii.
-
-
+Wykonanie zapytania z funkcją okna partycjonowaną categoryid zwraca w 77-dmiu wierszach osiem wartości (ponownie tych samych: 37.9791, 23.0625, 25.1600, 28.7300, 20.2500, 54.0066, 32.3700, 20.6825): dla każdego przetwarzanego wiersza podaje wartość funkcji dla wszystkich elementów mających ten sam categoryid, co element znajdujący się w przetwarzanym wierszu. Funkcja okna jest wyliczana dla każdego wiersza. Zatem użycie partition by CategoryID sprawia, że średnia cena jest liczona dla poszczególnych CategoryID i przypisywana do wszystkich produktów należących do danej kategorii.
 
 ```
 
@@ -183,7 +180,7 @@ select p.productid, p.productname, p.unitprice,
 from products p;
 ```
 
-MS SQL Server
+**MS SQL Server**
 
 podzapytanie:
 ![alt text](_img/_report/image7.png)
@@ -199,7 +196,7 @@ Koszty wykonania od najmniejszego: funkcja okna (2.73), podzapytanie (3.75), joi
 Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, join, podzapytanie (bardzo wysoki stopień złożoności względem pozostałych)
 
 
-PostgreSQL
+**PostgreSQL**
 
 podzapytanie:
 ![alt text](_img/_report/image4.png)
@@ -216,7 +213,7 @@ Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, podzapytanie,
 
 
 
-SQLite
+**SQLite**
 
 podzapytanie:
 ![alt text](_img/_report/image13.png)
@@ -228,7 +225,7 @@ funkcja okna:
 Brak informacji o koszcie wykonania.
 Plany wykonania od najmniejszego stopnia złożenia: funkcja okna / podzapytanie, join
 
-Podsumowanie:
+**Podsumowanie**:
 
 W MS SQL Server, mimo iż wykonywanie funkcji okna na grafie planu wykonania wygląda na nieco bardziej skomplikowane, w rzeczywistoście jest szybsze od zapytania wykorzystującego podzapytanie i joina (które mają zbliżone czasy wykonywania)
 
@@ -272,7 +269,7 @@ FROM (
 where unitprice > avgprice;
 ```
 
-MS SQL Server
+**MS SQL Server**
 
 podzapytanie:
 ![alt text](_img/_report/image19.png)
@@ -285,7 +282,7 @@ Koszty wykonania od najmniejszego: funkcja okna (0.0056), join / podzapytanie(0.
 Plany wykonania od najmniejszego stopnia złożenia: join, podzapytanie, funkcja okna
 
 
-PostgreSQL
+**PostgreSQL**
 
 podzapytanie:
 ![alt text](_img/_report/image16.png)
@@ -298,7 +295,7 @@ Koszty wykonania od najmniejszego: funkcja okna (3.69), podzapytanie(5.91), join
 Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, podzapytanie, join.
 
 
-SQLite
+**SQLite**
 
 podzapytanie:
 ![alt text](_img/_report/image22.png)
@@ -310,7 +307,7 @@ funkcja okna:
 Brak informacji o koszcie wykonania.
 Plany wykonania od najmniejszego stopnia złożenia: podzapytanie, funkcja okna, join
 
-Podsumowanie:
+**Podsumowanie**:
 
 W MS SQL Server zapytanie z funkcją okna i joinem wykonują się w podobnym czasie. Dużo wolniej wykonuje się wersja z podzapytaniem, która też na schemacie planu wykonania ujawnia więckszą liczbę operacji.
 
@@ -424,15 +421,15 @@ where 1=1;
 
 Wykonaj polecenia: `select count(*) from product_history`,  potwierdzające wykonanie zadania
 
-SQL Server:
+**MS SQL Server**:
 
 ![alt text](_img/_report/image26.png)
 
-Postgresql:
+**PostgreSQL**:
 
 ![alt text](_img/_report/image25.png)
 
-SQLite:
+**SQLite**:
 
 ![alt text](_img/_report/sqlite_ex5.png)
 
@@ -472,19 +469,7 @@ FROM (
 ) AS averageUnitprice
 where unitprice > avgprice;
 ```
-PostgreSQL
-
-podzapytanie:
-![alt text](_img/_report/image30.png)
-join:
-![alt text](_img/_report/image31.png)
-funkcja okna:
-![alt text](_img/_report/image32.png)
-
-Koszty wykonania od najmniejszego: funkcja okna(139692), podzapytanie (231450), join(239151)
-Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, podzapytanie, join
-
-MS SQL Server
+**MS SQL Server**
 
 podzapytanie:
 ![alt text](_img/_report/image27.png)
@@ -497,17 +482,37 @@ funkcja okna:
 Koszty wykonania od najmniejszego: funkcja okna(21.01), join (63.15), podzapytanie (63.22) 
 Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, join/podzapytanie
 
-SQLite
+**PostgreSQL**
 
 podzapytanie:
+![alt text](_img/_report/image30.png)
+join:
+![alt text](_img/_report/image31.png)
+funkcja okna:
+![alt text](_img/_report/image32.png)
+
+Koszty wykonania od najmniejszego: funkcja okna(139692), podzapytanie (231450), join(239151)
+Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, podzapytanie, join
+
+
+
+**SQLite**
+
+podzapytanie:
+![alt text](image-4.png)
 
 join:
+![alt text](image-5.png)
 
 funkcja okna:
-
+![alt text](image-6.png)
 
 Brak informacji o koszcie wykonania. 
-Plany wykonania od najmniejszego stopnia złożenia:
+Plany wykonania od najmniejszego stopnia złożenia: podzapytanie, join, funkcja okna.
+
+**Podsumowanie**:
+
+Podczas gdy funkcja okna zdaje się mieć przewagę nad zapytanami wykorzystującymi podzapytanie i join w MS SQL Server i PosgreSQL, oferując zarówno niższy koszt, jak i mniej skomplikowany plan wykonania, w SQLite zarówno drzewo planu wykonania posiada dodatkowy poziom, jak i zapytanie z funkcją wykonuje się o rząd wielkości dłużej, niż pozostałe dwa (powyżej 2s w przypadku funkcji okna vs. ok. 800ms w przypadku podzapytania i joina).
 
 
 ---
@@ -532,57 +537,55 @@ Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
 -- podzapytania
-SELECT
-    ph.id,ph.productid,ph.productname,ph.unitprice,
+SELECT ph.id,ph.productid,ph.productname,ph.unitprice,
     (SELECT AVG(unitprice) FROM product_history WHERE categoryid = ph.categoryid) AS avg_category_price,
     (SELECT SUM(value) FROM product_history WHERE categoryid = ph.categoryid) AS total_category_value,
-    (SELECT AVG(unitprice) FROM product_history WHERE productid = ph.productid AND extract(year from date) = extract(year from ph.date)) AS avg_product_price_per_year,
-    (SELECT SUM(value) FROM product_history WHERE categoryid = ph.categoryid) AS total_category_value_window
-FROM
-    product_history ph;
+    (SELECT AVG(unitprice) FROM product_history WHERE productid = ph.productid AND YEAR(date) = YEAR(ph.date))
+    --PostgreSQL:
+    --extract(year from date) = extract(year from ph.date)
+    --SQLite:
+    --strftime('%Y', date) = strftime('%Y', ph.date)
+        AS avg_product_price_per_year
+FROM product_history ph
+WHERE id between 1000 AND 1200
+ORDER BY ph.id;
 
 -- join
-SELECT
-    ph.id,ph.productid,ph.productname, ph.unitprice,
-    AVG(pc.unitprice) AS avg_category_price,
-    SUM(pc.value) AS total_category_value,
-    AVG(ph.unitprice) AS avg_product_price_per_year,
-    SUM(ph.value) AS total_category_value_window
-FROM
-    product_history ph
-JOIN
-    product_history pc ON ph.categoryid = pc.categoryid
-GROUP BY
-    ph.id,ph.productid,ph.productname,ph.unitprice;
+WITH av AS (SELECT categoryid,
+        AVG(unitprice) AS avg_category_price,
+        SUM(value) AS total_category_value
+    FROM product_history
+    GROUP BY categoryid),
+av_product AS (SELECT productid,
+        YEAR(date) AS year,
+        AVG(unitprice) AS avg_product_price_per_year
+    FROM product_history
+    GROUP BY productid, YEAR(date))
+SELECT ph.id, ph.productid, ph.productname, ph.unitprice, av.avg_category_price, av.total_category_value, ap.avg_product_price_per_year
+FROM product_history ph
+JOIN av ON ph.categoryid = av.categoryid
+JOIN av_product ap ON ph.productid = ap.productid AND YEAR(ph.date) = ap.year
+WHERE ph.id BETWEEN 1000 AND 1200
+ORDER BY ph.id;
 
 -- funkcje okna
-SELECT
-    ph.id,ph.productid,ph.productname,ph.unitprice,
-    AVG(ph.unitprice) OVER (PARTITION BY ph.categoryid) AS avg_category_price,
-    SUM(ph.value) OVER (PARTITION BY ph.categoryid) AS total_category_value,
-    AVG(ph.unitprice) OVER (PARTITION BY ph.productid, extract(year from ph.date)) AS avg_product_price_per_year,
-    SUM(ph.value) OVER (PARTITION BY ph.categoryid) AS total_category_value_window
-FROM
-    product_history ph;
+WITH av AS (SELECT ph.id, ph.productid, ph.productname, ph.unitprice,
+                   AVG(ph.unitprice) OVER wcatid AS avg_category_price,
+                   SUM(ph.value) OVER wcatid AS total_category_value,
+                   AVG(ph.unitprice) OVER (PARTITION BY ph.productid, year(ph.date)) AS avg_product_price_per_year
+            FROM product_history ph
+            WINDOW wcatid AS (PARTITION BY ph.categoryid))
+SELECT * FROM av
+WHERE id between 1000 AND 1200
+ORDER BY av.id;
 ```
-
-PostgreSQL
-
-podzapytanie:
-
-join:
-
-funkcja okna:
-![alt text](_img/_report/image33.png)
-
-Koszty wykonania od najmniejszego:
-Plany wykonania od najmniejszego stopnia złożenia:
-
-MS SQL Server
+**MS SQL Server**
 
 podzapytanie:
+![alt text](image-9.png)
 
 join:
+![alt text](image-10.png)
 
 funkcja okna:
 ![alt text](_img/_report/image34.png)
@@ -590,13 +593,33 @@ funkcja okna:
 Koszty wykonania od najmniejszego: 
 Plany wykonania od najmniejszego stopnia złożenia: 
 
-SQLite
+
+**PostgreSQL**
 
 podzapytanie:
+![alt text](image-7.png)
 
 join:
+![alt text](image-11.png)
 
 funkcja okna:
+![alt text](_img/_report/image33.png)
+
+Koszty wykonania od najmniejszego:
+Plany wykonania od najmniejszego stopnia złożenia:
+
+
+
+**SQLite**
+
+podzapytanie:
+![alt text](image-8.png)
+
+join:
+![alt text](image-12.png)
+
+funkcja okna:
+![alt text](image-13.png)
 
 
 Brak informacji o koszcie wykonania.
