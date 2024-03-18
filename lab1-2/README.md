@@ -512,7 +512,7 @@ Plany wykonania od najmniejszego stopnia złożenia: podzapytanie, join, funkcja
 
 **Podsumowanie**:
 
-Podczas gdy funkcja okna zdaje się mieć przewagę nad zapytanami wykorzystującymi podzapytanie i join w MS SQL Server i PosgreSQL, oferując zarówno niższy koszt, jak i mniej skomplikowany plan wykonania, w SQLite zarówno drzewo planu wykonania posiada dodatkowy poziom, jak i zapytanie z funkcją wykonuje się o rząd wielkości dłużej, niż pozostałe dwa (powyżej 2s w przypadku funkcji okna vs. ok. 800ms w przypadku podzapytania i joina).
+Podczas gdy funkcja okna zdaje się mieć przewagę nad zapytanami wykorzystującymi podzapytanie i join w MS SQL Server i PosgreSQL, oferując zarówno niższy koszt, jak i mniej skomplikowany plan wykonania, w SQLite zarówno drzewo planu wykonania posiada dodatkowy poziom, jak i zapytanie z funkcją okna wykonuje się o rząd wielkości dłużej, niż pozostałe dwa (powyżej 2s w przypadku funkcji okna vs. ok. 800ms w przypadku podzapytania i joina).
 
 
 ---
@@ -588,10 +588,10 @@ join:
 ![alt text](image-10.png)
 
 funkcja okna:
-![alt text](_img/_report/image34.png)
+![alt text](image-15.png)
 
-Koszty wykonania od najmniejszego: 
-Plany wykonania od najmniejszego stopnia złożenia: 
+Koszty wykonania od najmniejszego: join (39), podzapytanie (59), funkcja okna (79). 
+Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, postgres, join. 
 
 
 **PostgreSQL**
@@ -603,10 +603,10 @@ join:
 ![alt text](image-11.png)
 
 funkcja okna:
-![alt text](_img/_report/image33.png)
+![alt text](image-14.png)
 
-Koszty wykonania od najmniejszego:
-Plany wykonania od najmniejszego stopnia złożenia:
+Koszty wykonania od najmniejszego: join (359180), funkcja okna (1167121), podzapytanie (>5*10^7).
+Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, podzapytanie, join.
 
 
 
@@ -623,7 +623,11 @@ funkcja okna:
 
 
 Brak informacji o koszcie wykonania.
-Plany wykonania od najmniejszego stopnia złożenia:
+Plany wykonania od najmniejszego stopnia złożenia: podzapytanie i join, funkcja okna.
+
+**Podsumowanie**:
+
+Podczas gdy w jednym MS SQL Server zapytanie wykorzystujące podzapytanie wykononywało się w szybciej od pozostałych dwóch wariantów, w przypadku PostgreSQL wykonanie query z podazpytaniem było znacząco dłuższe od pozostały (ok 7 min). Wygląda na to, że ograniecznie wprowadzone w zapytaniu nadrzędnym w klauzuli WHERE nie dotyczy tego, co dzieje się w podzapytaniach. Otrzymanie wymaganych informacji poleceniem wykorzystującym joina wymagało stosunkowo złożonego zapytania. 
 
 
 ---
@@ -642,7 +646,15 @@ from products;
 ```
 ![alt text](_img/_report/image35.png)
 ```
- Widać, że funkcje te..
+Widać, że funkcje te służą do nadawania porządku wierszom w obrębie partycji.
+
+ROW_NUMBER() nadaje unikalny numer porządkowy dla każdego wiersza w zbiorze. Nie uwzględnia równych wartości. Numeracja jest ciągła i nie ma luk.
+
+RANK() nadaje porządek wierszom w ramach zbioru uwzględniając powtórzenia.
+Jeśli wartość sortująca jest taka sama, to funkcja przypisuje wierszom ten sam numer.
+Może pozostawić luki w numeracji.
+
+DENSE_RANK() działa podobnie jak RANK(), ale jest funkcją ciągłą - nie pozostawia luk w numeracji.
 ```
 
 
@@ -652,27 +664,24 @@ Spróbuj uzyskać ten sam wynik bez użycia funkcji okna
 
 ```sql
 SELECT
-    p.productid,
-    p.productname,
-    p.unitprice,
-    p.categoryid,
+    p.productid, p.productname, p.unitprice, p.categoryid,
     (
         SELECT COUNT(*)
         FROM products p2
         WHERE p2.categoryid = p.categoryid AND p2.unitprice >= p.unitprice
     ) AS rowno,
     (
-        SELECT COUNT(DISTINCT p2.unitprice) + 1
+        SELECT COUNT(*)
         FROM products p2
         WHERE p2.categoryid = p.categoryid AND p2.unitprice > p.unitprice
-    ) AS rankprice,
+    ) + 1 AS rankprice,
     (
         SELECT COUNT(DISTINCT p2.unitprice)
         FROM products p2
         WHERE p2.categoryid = p.categoryid AND p2.unitprice >= p.unitprice
     ) AS denserankprice
-FROM products p;
-
+FROM products p
+order by categoryid, unitprice desc;
 ```
 
 
