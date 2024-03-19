@@ -1,2 +1,5 @@
-Repozytorium na sprawozdania
-[Laby 1-2](lab1_2/README.md)
+# OSZBD 2024
+
+Repozytorium na sprawozdania:
+
+1. [Laby 1-3](/lab1-2/README.md)
