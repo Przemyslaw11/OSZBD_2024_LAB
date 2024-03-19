@@ -579,6 +579,9 @@ SELECT * FROM av
 WHERE id between 1000 AND 1200
 ORDER BY av.id;
 ```
+Zrzut z wynikami:
+![alt text](image.png)
+
 **MS SQL Server**
 
 podzapytanie:
@@ -648,13 +651,13 @@ from products;
 ```
 Widać, że funkcje te służą do nadawania porządku wierszom w obrębie partycji.
 
-ROW_NUMBER() nadaje unikalny numer porządkowy dla każdego wiersza w zbiorze. Nie uwzględnia równych wartości. Numeracja jest ciągła i nie ma luk.
+ROW_NUMBER() nadaje unikalny numer porządkowy dla każdego wiersza w obrębie wydzielonego zbioru. Nie uwzględnia równych wartości. Numeracja jest ciągła i nie ma luk.
 
 RANK() nadaje porządek wierszom w ramach zbioru uwzględniając powtórzenia.
 Jeśli wartość sortująca jest taka sama, to funkcja przypisuje wierszom ten sam numer.
 Może pozostawić luki w numeracji.
 
-DENSE_RANK() działa podobnie jak RANK(), ale jest funkcją ciągłą - nie pozostawia luk w numeracji.
+DENSE_RANK() działa podobnie jak RANK(), ale daje wartości ciągłe - nie pozostawia luk w numeracji.
 ```
 
 
@@ -731,18 +734,18 @@ ORDER BY YEAR(ph1.date), ph1.productid, price_rank;
 ```
 **MS SQL Server**
 
-polecenie z funkcją okna:
+plan i koszty polecenia z funkcją okna:
 ![alt text](image-16.png)
 
-polecenie bez użycia funkcji okna:
+plan i koszty polecenia bez użycia funkcji okna:
 ![alt text](image-17.png)
 
 **PostgreSQL**
 
-polecenie z funkcją okna:
+pplan i koszty polecenia  z funkcją okna:
 ![alt text](image-18.png)
 
-polecenie bez użycia funkcji okna:
+plan i koszty polecenia  bez użycia funkcji okna:
 ![alt text](image-19.png)
 
 **SQLite**
@@ -754,9 +757,10 @@ polecenie bez użycia funkcji okna:
 ![alt text](image-21.png)
 
 
-Komentarz:
+**Komentarz**:
+
 We wszystkich trzech SZBD polecenie wykorzystujące funkcję okna miały miażdżącą przewagę jeśli idzie czas wykonywania i koszty.
-Ponadto, powyższe zapytania ostro rozgraniczyły SZBD pod względem czasu wykonania obu poleceń - MS SQL Server był szybszy od systemu PostgreSQL, który był szybszy od SQLlite.
+Ponadto, powyższe zapytania ostro rozgraniczyły SZBD pod względem czasu wykonania obu poleceń - MS SQL Server wykonywał zapytania szybciej od systemu PostgreSQL, który był szybszy od SQLlite.
 
 
 ---
@@ -793,45 +797,55 @@ drugi select:
 
 ```sql
 Zarówno LEAD() jak i LAG() zwracają wartości, które liczone są na podstawie sąsiednich wierszy.
- LEAD() zwraca wiersz, który pojawia się za nim (posiada indeks większy o 1). Nie musimy w ten sposób używać skomplikowanych podzapytań ani self-join, aby zwrócić następnika danego wiersza. 
- LAG() zwraca wiersz, który pojawia się przed nim (posiada indeks mnniejszy o 1)
+ LEAD() zwraca wartość z wiersza, który pojawia się po analizowanym wierszu (posiada indeks większy o 1). Nie musimy w ten sposób używać skomplikowanych podzapytań ani self-join, aby zwrócić następnik danego wiersza. 
+ LAG() zwraca wartość z wiersza, który pojawia się przed analizowanym wierszem (posiada indeks mnniejszy o 1)
 
- Drugi select uzupełnia nam miejsce null w pierwszym wierszu, ponieważ ...
+ Drugi select uzupełnia nam miejsce null w pierwszym wierszu, ponieważ ograniczenie w klauzuli where dotyczy tymczasowej tabeli utworzonej klauzulą with (a nie wierszy analizowanych w głównym zapytaniu z funkcją okna, jak w przypadku piwerszego selecta. Sytuacja jest dość podobna do obserwacji z zadania 2.
 ```
 Zadanie
 
 Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
-SELECT 
-    ph.productid,
-    ph.productname,
-    ph.categoryid,
-    ph.date,
-    ph.unitprice,
-    prev.unitprice AS previousprodprice,
-    next.unitprice AS nextprodprice
-FROM 
-    product_history ph
-LEFT JOIN 
-    product_history prev ON ph.productid = prev.productid
-    AND ph.date > prev.date
-LEFT JOIN 
-    product_history next ON ph.productid = next.productid
-    AND ph.date < next.date
-WHERE 
-    ph.productid = 1
-    AND YEAR(ph.date) = 2022
-ORDER BY 
-    ph.date;
+SELECT ph.productid, ph.productname, ph.categoryid, ph.date, ph.unitprice,
+    (SELECT TOP 1 p.unitprice
+         FROM product_history p
+         WHERE p.productid = ph.productid AND p.date < ph.date
+         ORDER BY p.date DESC) AS previousprodprice,
+    (SELECT TOP 1 p.unitprice
+         FROM product_history p
+         WHERE p.productid = ph.productid AND p.date > ph.date
+         ORDER BY p.date ASC) AS nextprodprice
+FROM product_history ph
+WHERE ph.productid = 1 AND YEAR(ph.date) = 2022
+ORDER BY ph.date;
 
+    --PostgreSQL:
+    --extract(year from date)
+    --LIMIT 1
+    --SQLite:
+    --strftime('%Y', date)
+    --'yearasstring'
+    --LIMIT 1
 ```
-MS SQL Server
-![alt text](_img/_report/image38.png)
+**MS SQL Server**
 
-PostgreSQL
+![alt text](image-1.png)
 
-\> 20min
+**PostgreSQL**
+
+![alt text](image-2.png)
+
+
+**SQLite**
+
+![alt text](image-3.png)
+
+**Komentarz**:
+
+Ponownie olbrzymią przewagę w czasie wykonywania zapytań (skonstruowanych bez użycia funkcji okna) spośród wszystkich SZBD miał MS SQL Server (6s), za nim plasował się SQLite (57s) a na samym końcu plasował się PostgreSQL (2m 48s).
+
+Zapytania wykorzystujące funkcję okna wykonują się znacząco szybciej - w czasie zbliżonym do 1s (482ms, 691ms oraz 1s 493ms odpowiednio dla: MS SQL, PostgreSQL, SQLite). Zarówno koszty i czas wykonania, jak i złożoność i czytelność polecenia każą uznać tego rodzaju polecenia za bardziej korzystne i optymalne rozwiązanie.
 
 ---
 # Zadanie 11
@@ -849,37 +863,16 @@ Zbiór wynikowy powinien zawierać:
 - wartość poprzedniego zamówienia danego klienta.
 
 ```sql
-WITH PreviousOrder AS (
-    SELECT
-        c.CompanyName,
-        o.orderid,
-        o.orderdate,
-        SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight AS order_value,
-        LAG(o.orderid) OVER (PARTITION BY o.customerid ORDER BY o.orderdate) AS previous_order_id,
-        LAG(o.orderdate) OVER (PARTITION BY o.customerid ORDER BY o.orderdate) AS previous_order_date,
-        LAG(SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight) OVER (PARTITION BY o.customerid ORDER BY o.orderdate) AS previous_order_value
-    FROM
-        orders o
-    INNER JOIN
-        customers c ON o.customerid = c.customerid
-    LEFT JOIN
-        "Order Details" od ON o.orderid = od.orderid
-    GROUP BY
-        c.CompanyName, o.orderid, o.orderdate, o.freight, o.customerid
-)
-
-SELECT
-    CompanyName,
-    orderid,
-    orderdate,
-    order_value,
-    previous_order_id,
-    previous_order_date,
-    previous_order_value
-FROM
-    PreviousOrder
-ORDER BY
-    orderdate;
+SELECT c.companyname, o.orderid, o.orderdate,
+       SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight AS order_value,
+       LAG(o.orderid) OVER (PARTITION BY o.customerid ORDER BY o.orderdate) AS previous_order_id,
+       LAG(o.orderdate) OVER (PARTITION BY o.customerid ORDER BY o.orderdate) AS previous_order_date,
+       LAG(SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight) OVER (PARTITION BY o.customerid ORDER BY o.orderdate) AS previous_order_value
+FROM orders o
+INNER JOIN customers c ON o.customerid = c.customerid
+LEFT JOIN orderdetails od ON o.orderid = od.orderid
+GROUP BY c.companyname, o.orderid, o.orderdate, o.freight, o.customerid
+ORDER BY companyname, orderdate;
 ```
 
 
@@ -901,8 +894,34 @@ order by categoryid, unitprice desc;
 ```
 ![alt text](_img/_report/image39.png)
 ```sql
-first_value() zwraca pierwszą wartość ze zbioru uporządkowanych wartości.
-last_value() zwraca ostatnią wartość ze zbioru uporządkowanych wartości. 
+Funkcja first_value() zwraca wartość kolumny (określonej w argumencie) z pierwszego wiersza w uporządkowanym zbiorze danych, które jest określone przez funkcję okna. Innymi słowy, zwraca wartość kolumny z pierwszego wiersza w hierarchii, którą ustala funkcja okna (tu najdroższy w tej samej kategorii).
+
+Funkcja last_value() zwraca wartość kolumny (określonej w argumencie) z ostatniego wiersza o takiej samej wartości porządkującej w partycjonowanym zbiorze danych. Oznacza to, że zwraca wartość kolumny z ostatniego wiersza w partycji, który ma tę samą wartość, jak wartość porządkująca, według której jest sortowany zbiór danych (to ostatni z kategorii o tej samej cenie, co w wierszu).
+
+Żeby otrzymać najtańszy produkt danej kategorii, można ponownie skorzystać z first_value() i odwrócić kolejność porządku (usunąć desc):
+
+first_value(productname) over (partition by categoryid   
+order by unitprice) first, 
+
+lub, jeśli koniecznie to ma być last_value(), to należy zmienić zakres ramki:
+
+last_value(productname) over (partition by categoryid   
+order by unitprice desc
+range between unbounded preceding and unbounded following) last
+
+Oba rozwiązanie demonstruje poniższe zapytanie:
+
+select productid, productname, unitprice, categoryid,
+    first_value(productname) over (partition by categoryid
+order by unitprice desc) first,
+    first_value(productname) over (partition by categoryid
+order by unitprice) last_with_first_value,
+    last_value(productname) over (partition by categoryid
+order by unitprice desc
+range between unbounded preceding and unbounded following) last_with_last_value
+from products
+order by categoryid, unitprice desc;
+
 ```
 
 Zadanie
@@ -910,44 +929,66 @@ Zadanie
 Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
-
--- wydaje mi sie, ze jest zle
-SELECT 
-    p.productid,
-    p.productname,
-    p.unitprice,
-    p.categoryid,
-    first_product.first AS first,
-    last_product.last AS last
-FROM 
-    products p
-JOIN (
-    SELECT 
-        categoryid,
-        MAX(unitprice) AS max_unitprice,
-        MIN(unitprice) AS min_unitprice,
-        MAX(productname) AS first,
-        MIN(productname) AS last
-    FROM 
-        products
-    GROUP BY 
-        categoryid
-) AS first_product ON p.categoryid = first_product.categoryid AND p.unitprice = first_product.max_unitprice
-JOIN (
-    SELECT 
-        categoryid,
-        MAX(unitprice) AS max_unitprice,
-        MIN(unitprice) AS min_unitprice,
-        MAX(productname) AS first,
-        MIN(productname) AS last
-    FROM 
-        products
-    GROUP BY 
-        categoryid
-) AS last_product ON p.categoryid = last_product.categoryid AND p.unitprice = last_product.min_unitprice
-ORDER BY 
-    p.categoryid, p.unitprice DESC;
+SELECT p.productid, p.productname, p.unitprice, p.categoryid, first, last
+FROM products p
+LEFT JOIN (
+    SELECT categoryid, productname as first
+    FROM products p1
+    WHERE unitprice = (
+            SELECT MAX(unitprice)
+            FROM products AS p2
+            WHERE p1.categoryid = p2.categoryid)
+    ) AS expensive_product ON p.categoryid = expensive_product.categoryid
+LEFT JOIN (
+    SELECT categoryid, productname as last
+    FROM products AS p1
+    WHERE unitprice = (
+            SELECT MIN(unitprice)
+            FROM products AS p2
+            WHERE p1.categoryid = p2.categoryid)
+) AS cheap_product ON p.categoryid = cheap_product.categoryid
+ORDER BY p.categoryid, p.unitprice DESC;
 ```
+
+**MS SQL Server**
+
+plan i koszty polecenia z funkcją okna:
+![alt text](image-4.png)
+(czas wykonywania zapytania: 165ms)
+
+
+plan i koszty polecenia bez użycia funkcji okna:
+![alt text](image-5.png)
+(czas wykonywania zapytania: 176ms)
+
+
+**PostgreSQL**
+
+pplan i koszty polecenia  z funkcją okna:
+![alt text](image-6.png)
+(czas wykonywania zapytania: 116ms):
+
+
+plan i koszty polecenia  bez użycia funkcji okna:
+![alt text](image-7.png)
+(czas wykonywania zapytania: 186ms):
+
+
+**SQLite**
+
+polecenie z funkcją okna
+![alt text](image-8.png)
+(czas wykonywania zapytania: 103ms):
+
+
+polecenie bez użycia funkcji okna
+![alt text](image-9.png)
+(czas wykonywania zapytania: 158ms):
+
+**Komentarz**:
+
+Polecenie niewykorzystujące funkcji okna, któe wymagało czterech podazpytań (dwa razy dwa zagnieźdżone podzapytania) wykonywało się zaskakująco niskim kosztem i w czasie zbliżonym do zapytania z funkcją okna we wszystkich SZBD.
+
 
 ---
 # Zadanie 13
@@ -971,50 +1012,26 @@ Zbiór wynikowy powinien zawierać:
 	- wartość tego zamówienia
 
 ```sql
-WITH OrderSummary AS (
-    SELECT
-        o.customerid,
-        o.orderid,
-        o.orderdate,
-        SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight AS order_value,
-        YEAR(o.orderdate) AS order_year,
-        MONTH(o.orderdate) AS order_month,
-        ROW_NUMBER() OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate), o.customerid ORDER BY SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight ASC) AS min_order_rank,
-        ROW_NUMBER() OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate), o.customerid ORDER BY SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight DESC) AS max_order_rank
-    FROM
-        orders o
-    INNER JOIN
-        orderdetails od ON o.orderid = od.orderid
-    GROUP BY
-        o.customerid, o.orderid, o.orderdate, o.freight
-)
-
 SELECT
-    os.customerid,
-    os.orderid,
-    os.orderdate,
-    os.order_value,
-    min_order.orderid AS min_order_id,
-    min_order.orderdate AS min_order_date,
-    min_order.order_value AS min_order_value,
-    max_order.orderid AS max_order_id,
-    max_order.orderdate AS max_order_date,
-    max_order.order_value AS max_order_value
+    o.customerid,
+    o.orderid,
+    o.orderdate,
+    ROUND(SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight, 2) AS order_value,
+    MIN(o.orderid) OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate)) AS cheap_mon_id,
+    MIN(o.orderdate) OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate)) AS cheap_mon_date,
+    MIN(ROUND(SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight, 2)) OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate)) AS cheap_mon_value,
+    MAX(o.orderid) OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate)) AS exp_mon_id,
+    MAX(o.orderdate) OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate)) AS exp_mon_date,
+    MAX(ROUND(SUM(od.unitprice * od.quantity * (1 - od.discount)) + o.freight, 2)) OVER (PARTITION BY YEAR(o.orderdate), MONTH(o.orderdate)) AS exp_mon_value
 FROM
-    OrderSummary os
-LEFT JOIN
-    OrderSummary min_order ON os.order_year = min_order.order_year
-    AND os.order_month = min_order.order_month
-    AND os.customerid = min_order.customerid
-    AND min_order.min_order_rank = 1
-LEFT JOIN
-    OrderSummary max_order ON os.order_year = max_order.order_year
-    AND os.order_month = max_order.order_month
-    AND os.customerid = max_order.customerid
-    AND max_order.max_order_rank = 1;
+    orders o
+INNER JOIN
+    orderdetails od ON o.orderid = od.orderid
+group by o.customerid, o.orderid, o.orderdate, o.freight
+ORDER BY
+    o.customerid, o.orderdate;
 ```
-SQL SERVER
-![alt text](_img/_report/image_x_2.png)
+![alt text](image-10.png)
 ---
 # Zadanie 14
 
@@ -1030,40 +1047,28 @@ Zbiór wynikowy powinien zawierać:
 - wartość sprzedaży produktu narastające od początku miesiąca
 
 ```sql
-SELECT
-    id,
-    productid,
-    date,
-    value,
-    SUM(value) OVER (PARTITION BY productid, YEAR(date), MONTH(date) ORDER BY date) AS total_sales
-FROM
-    product_history
-ORDER BY
-    productid, date;
+SELECT id, productid, date, value,
+    SUM(value) OVER (PARTITION BY productid, YEAR(date), MONTH(date) ORDER BY date) AS cumulative_monthly
+FROM product_history
+-- WHERE id BETWEEN 2003 AND 2465 AND productid = 1
+ORDER BY productid, date;
 ```
-![alt text](_img/_report/image_x_3.png)
+
+![alt text](image-11.png)
 
 Spróbuj wykonać zadanie bez użycia funkcji okna. Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
-SELECT
-    ph.id,
-    ph.productid,
-    ph.date,
-    ph.value,
-    (
-        SELECT SUM(value)
-        FROM product_history
-        WHERE productid = ph.productid
-        AND YEAR(date) = YEAR(ph.date)
-        AND MONTH(date) = MONTH(ph.date)
-        AND date <= ph.date
-    ) AS total_sales
-FROM
-    product_history ph
-WHERE ph.id between 1000 and 1200
-ORDER BY
-    ph.productid, ph.date;
+SELECT ph.id, ph.productid, ph.date, ph.value,
+(SELECT SUM(value)
+     FROM product_history
+     WHERE productid = ph.productid
+     AND YEAR(date) = YEAR(ph.date)
+     AND MONTH(date) = MONTH(ph.date)
+     AND date <= ph.date) AS cumulative_monthly
+FROM product_history ph
+-- WHERE ph.id BETWEEN 2003 AND 2465 AND productid = 1
+ORDER BY ph.productid, ph.date;
 ```
 SQL SERVER
 ![img.png](_img/_report/img_x_1.png)
@@ -1071,9 +1076,46 @@ SQL SERVER
 PostgreSQL
 ![img_1.png](_img/_report/img_x_2.png)
 
-Zapytanie zostało ograniczone do id między 1000, a 1200, ponieważ w innym przypadku zapytanie wykonywało się ponad 10minut, bez rezultatu.
+**MS SQL Server**
 
-Widać, że to samo zapytanie wykonuje się na Postgresie 3 razy dłużej niż SQL Serverze.
+plan i koszty polecenia z funkcją okna: 128
+![alt text](image-12.png)
+czas wykonywania zapytania (z ograniczeniem): 84ms
+
+
+plan i koszty polecenia bez użycia funkcji okna:
+![alt text](image-13.png)
+czas wykonywania zapytania (z ograniczeniem): 4s
+
+
+**PostgreSQL**
+
+plan i koszty polecenia z funkcją okna
+![alt text](image-14.png)
+(czas wykonywania zapytania (z ograniczeniem): 84ms
+
+
+plan i koszty polecenia  bez użycia funkcji okna:
+![alt text](image-15.png)
+czas wykonywania zapytania (z ograniczeniem): 5s
+
+
+**SQLite**
+
+polecenie z funkcją okna
+![alt text](image-22.png)
+czas wykonywania zapytania  (z ograniczeniem): 322ms
+
+
+polecenie bez użycia funkcji okna
+![alt text](image-23.png)
+czas wykonywania zapytania  (z ograniczeniem): 2s 802ms
+
+
+
+**Komentarz**:
+
+W tym zadaniu, ponownie polecenia z funkcją okna miały olbrzymią przewagę nad zapytanami bez wykorzystania funkcji okna a MS SQL Server miał znaczącą przewagę nad pozostalymi SZBD w zakresie kosztów i czasu wykonywania zapytań (zwłascza tych niewykorzystujących funkcji okna). Najlepiej widać to, gdy nieco zwiększmy sobie ograniczenie zadane w (powyżej okomentowanej) klauzuli where (np. usuwając ograniczenie na prductid lub oba).
 
 
 ---
@@ -1110,7 +1152,7 @@ ORDER BY
 
 ```
 ![alt text](_img/_report/image_x_6.png)
-```
+```sql
 -- Analiza trendów sprzedaży produktów w czasie
 
 SELECT
@@ -1124,7 +1166,7 @@ ORDER BY
     productid, date;
 ```
 ![alt text](_img/_report/image_x_7.png)
-```
+```sql
 -- Porównanie sprzedaży danego produktu z innymi produktami w tym samym okresie czasu
 
 SELECT
