@@ -701,33 +701,12 @@ Dla każdego produktu, podaj 4 najwyższe ceny tego produktu w danym roku. Zbió
 Uporządkuj wynik wg roku, nr produktu, pozycji w rankingu
 
 ```sql
-WITH RankedPrices AS (
-    SELECT 
-        YEAR(date) AS year,
-        productid,
-        productname,
-        unitprice,
-        date,
-        ROW_NUMBER() OVER (PARTITION BY productid, YEAR(date) ORDER BY unitprice DESC) AS price_rank
-    FROM 
-        product_history
-)
-
-SELECT 
-    year,
-    productid,
-    productname,
-    unitprice,
-    date,
-    price_rank
-FROM 
-    RankedPrices
-WHERE 
-    price_rank <= 4
-ORDER BY 
-    year,
-    productid,
-    price_rank;
+SELECT * FROM
+             (SELECT YEAR(date) as year,productid,productname,unitprice,date,
+                     rank() over(partition by productid, YEAR(date) order by unitprice desc) as rankprice
+              FROM product_history) t
+              where rankprice <= 4
+ORDER BY year, productid, rankprice;
 ```
 
 
@@ -735,32 +714,50 @@ Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czas
 
 
 ```sql
-SELECT 
-    YEAR(ph1.date) AS year,
-    ph1.productid,
-    ph1.productname,
-    ph1.unitprice,
-    ph1.date,
-    COUNT(*) AS price_rank
-FROM 
-    product_history ph1
-JOIN 
-    product_history ph2 ON ph1.productid = ph2.productid
+SELECT YEAR(ph1.date) AS year, ph1.productid, ph1.productname, ph1.unitprice, ph1.date,
+       COUNT(*) AS price_rank
+FROM product_history ph1
+JOIN product_history ph2 ON ph1.productid = ph2.productid
     AND YEAR(ph1.date) = YEAR(ph2.date)
     AND ph1.unitprice <= ph2.unitprice
-GROUP BY 
-    YEAR(ph1.date),
-    ph1.productid,
-    ph1.productname,
-    ph1.unitprice,
-    ph1.date
-HAVING 
-    COUNT(*) <= 4
-ORDER BY 
-    YEAR(ph1.date),
-    ph1.productid,
-    price_rank;
+GROUP BY YEAR(ph1.date), ph1.productid, ph1.productname, ph1.unitprice, ph1.date
+HAVING COUNT(*) <= 4
+ORDER BY YEAR(ph1.date), ph1.productid, price_rank;
+
+    --PostgreSQL:
+    --extract(year from date)
+    --SQLite:
+    --strftime('%Y', date)
 ```
+**MS SQL Server**
+
+polecenie z funkcją okna:
+![alt text](image-16.png)
+
+polecenie bez użycia funkcji okna:
+![alt text](image-17.png)
+
+**PostgreSQL**
+
+polecenie z funkcją okna:
+![alt text](image-18.png)
+
+polecenie bez użycia funkcji okna:
+![alt text](image-19.png)
+
+**SQLite**
+
+polecenie z funkcją okna:
+![alt text](image-20.png)
+
+polecenie bez użycia funkcji okna:
+![alt text](image-21.png)
+
+
+Komentarz:
+We wszystkich trzech SZBD polecenie wykorzystujące funkcję okna miały miażdżącą przewagę jeśli idzie czas wykonywania i koszty.
+Ponadto, powyższe zapytania ostro rozgraniczyły SZBD pod względem czasu wykonania obu poleceń - MS SQL Server był szybszy od systemu PostgreSQL, który był szybszy od SQLlite.
+
 
 ---
 # Zadanie 10 - obserwacja
