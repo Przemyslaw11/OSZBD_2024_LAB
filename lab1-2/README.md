@@ -499,13 +499,13 @@ Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, podzapytanie,
 **SQLite**
 
 podzapytanie:
-![alt text](image-4.png)
+![alt text](_img/_report/image_x_4.png)
 
 join:
-![alt text](image-5.png)
+![alt text](_img/_report/image_x_5.png)
 
 funkcja okna:
-![alt text](image-6.png)
+![alt text](_img/_report/image_x_8.png)
 
 Brak informacji o koszcie wykonania. 
 Plany wykonania od najmniejszego stopnia złożenia: podzapytanie, join, funkcja okna.
@@ -582,13 +582,13 @@ ORDER BY av.id;
 **MS SQL Server**
 
 podzapytanie:
-![alt text](image-9.png)
+![alt text](_img/_report/image_x_11.png)
 
 join:
-![alt text](image-10.png)
+![alt text](_img/_report/image_x_12.png)
 
 funkcja okna:
-![alt text](image-15.png)
+![alt text](_img/_report/image_x_17.png)
 
 Koszty wykonania od najmniejszego: join (39), podzapytanie (59), funkcja okna (79). 
 Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, postgres, join. 
@@ -597,13 +597,13 @@ Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, postgres, joi
 **PostgreSQL**
 
 podzapytanie:
-![alt text](image-7.png)
+![alt text](_img/_report/image_x_9.png)
 
 join:
-![alt text](image-11.png)
+![alt text](_img/_report/image_x_13.png)
 
 funkcja okna:
-![alt text](image-14.png)
+![alt text](_img/_report/image_x_18.png)
 
 Koszty wykonania od najmniejszego: join (359180), funkcja okna (1167121), podzapytanie (>5*10^7).
 Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, podzapytanie, join.
@@ -613,13 +613,13 @@ Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, podzapytanie,
 **SQLite**
 
 podzapytanie:
-![alt text](image-8.png)
+![alt text](_img/_report/image_x_10.png)
 
 join:
-![alt text](image-12.png)
+![alt text](_img/_report/image_x_14.png)
 
 funkcja okna:
-![alt text](image-13.png)
+![alt text](_img/_report/image_x_15.png)
 
 
 Brak informacji o koszcie wykonania.
@@ -1014,7 +1014,7 @@ LEFT JOIN
     AND max_order.max_order_rank = 1;
 ```
 SQL SERVER
-![alt text](image.png)
+![alt text](_img/_report/image_x_2.png)
 ---
 # Zadanie 14
 
@@ -1041,7 +1041,7 @@ FROM
 ORDER BY
     productid, date;
 ```
-![alt text](image-1.png)
+![alt text](_img/_report/image_x_3.png)
 
 Spróbuj wykonać zadanie bez użycia funkcji okna. Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
@@ -1061,10 +1061,21 @@ SELECT
     ) AS total_sales
 FROM
     product_history ph
+WHERE ph.id between 1000 and 1200
 ORDER BY
     ph.productid, ph.date;
 ```
-\ > 8min
+SQL SERVER
+![img.png](_img/_report/img_x_1.png)
+
+PostgreSQL
+![img_1.png](_img/_report/img_x_2.png)
+
+Zapytanie zostało ograniczone do id między 1000, a 1200, ponieważ w innym przypadku zapytanie wykonywało się ponad 10minut, bez rezultatu.
+
+Widać, że to samo zapytanie wykonuje się na Postgresie 3 razy dłużej niż SQL Serverze.
+
+
 ---
 # Zadanie 15
 
@@ -1098,7 +1109,7 @@ ORDER BY
     productid, date;
 
 ```
-![alt text](image-2.png)
+![alt text](_img/_report/image_x_6.png)
 ```
 -- Analiza trendów sprzedaży produktów w czasie
 
@@ -1112,7 +1123,7 @@ FROM
 ORDER BY
     productid, date;
 ```
-![alt text](image-3.png)
+![alt text](_img/_report/image_x_7.png)
 ```
 -- Porównanie sprzedaży danego produktu z innymi produktami w tym samym okresie czasu
 
