@@ -78,7 +78,6 @@ from products p;
 
 Jaka jest są podobieństwa, jakie różnice pomiędzy grupowaniem danych a działaniem funkcji okna?
 
-```sql
 Wykonanie zapytania z funkcją agregującą avg zwraca jednorazowo jej wartość obliczoną dla wszystkich wierszy tabeli products (28.8663). Wynik jest zagregowany do pojedynczego wiersza.
 
 Wykonanie tego zapytania w klauzuli GROUP BY categoryid zwraca jednorazowo osiem wartości tej funkcji (37.9791, 23.0625, 25.1600, 28.7300, 20.2500, 54.0066, 32.3700, 20.6825). Wynik jest zatem zagregowany dla wierszy zgrupowanych według ośmiu kategorii a wyników jest tyle, ile jest unikalnych CategoryID.
@@ -86,8 +85,6 @@ Wykonanie tego zapytania w klauzuli GROUP BY categoryid zwraca jednorazowo osiem
 Wykonanie zapytania z funkcją okna zwraca zagregowaną wartość funkcji (tę samą: 28.8663) dla każdego przetwarzanego przez zapytanie wiersza (w tym wypadku 77-miokrotnie). Funkcja okna wykonuje operacje na podzbiorach danych przesuwających się po całym zbiorze. Wynik, czyli średnia cena liczona dla całej tabeli Products przydzielony jest do każdej instancji produktu - wyników jest tyle, ile jest wierszy w tabeli Products.
 
 Wykonanie zapytania z funkcją okna partycjonowaną categoryid zwraca w 77-dmiu wierszach osiem wartości (ponownie tych samych: 37.9791, 23.0625, 25.1600, 28.7300, 20.2500, 54.0066, 32.3700, 20.6825): dla każdego przetwarzanego wiersza podaje wartość funkcji dla wszystkich elementów mających ten sam categoryid, co element znajdujący się w przetwarzanym wierszu. Funkcja okna jest wyliczana dla każdego wiersza. Zatem użycie partition by CategoryID sprawia, że średnia cena jest liczona dla poszczególnych CategoryID i przypisywana do wszystkich produktów należących do danej kategorii.
-
-```
 
 ---
 # Zadanie 2 - obserwacja
@@ -114,13 +111,11 @@ Jaka jest różnica? Czego dotyczy warunek w każdym z przypadków? Napisz polec
 - 1) z wykorzystaniem funkcji okna. Napisz polecenie równoważne 
 - 2) z wykorzystaniem podzapytania
 
-```
 Oba zapytania zwracają 9 wierszy zawierjących id, nazwy oraz ceny produktów, których id jest mniejsze od 10. Różnią się jednak kolumną zawierającą wartość funkcji avg. Agregacja wywołana w podzapytaniu zwróciła wartość średnią dla wszystkich produktów (wszystkich wierszy w tabeli). Agregacja użyta w funkcji okna zwróciła wartość średnią dla wierszy ograniczonych warunkiem where productid < 10.
 
 W przypadku 1) warunek dotyczy wyłącznie zapytania głównego/zewnętrznego, w przypadku 2) warunek dotyczy także argumentów funkcji okna.
 
 Różnica polega więc na tym, że select z podzapytaniem opiera swoją średnią na wszystkich wartościach unitprice z tabeli products, całkowicie ignorując polecenie where productid < 10, podczas, gdy drugi select używający funkcji okna uwzględnia ten warunek. Dostajemy w ten sposób różne wyniki (28.833 vs 31.372).
-```
 
 
 ```sql
@@ -648,7 +643,7 @@ select productid, productname, unitprice, categoryid,
 from products;
 ```
 ![alt text](_img/_report/image35.png)
-```
+
 Widać, że funkcje te służą do nadawania porządku wierszom w obrębie partycji.
 
 ROW_NUMBER() nadaje unikalny numer porządkowy dla każdego wiersza w obrębie wydzielonego zbioru. Nie uwzględnia równych wartości. Numeracja jest ciągła i nie ma luk.
@@ -658,7 +653,7 @@ Jeśli wartość sortująca jest taka sama, to funkcja przypisuje wierszom ten s
 Może pozostawić luki w numeracji.
 
 DENSE_RANK() działa podobnie jak RANK(), ale daje wartości ciągłe - nie pozostawia luk w numeracji.
-```
+
 
 
 Zadanie
@@ -795,13 +790,13 @@ pierwszy select:
 drugi select:
 ![alt text](_img/_report/image37.png)
 
-```sql
+
 Zarówno LEAD() jak i LAG() zwracają wartości, które liczone są na podstawie sąsiednich wierszy.
  LEAD() zwraca wartość z wiersza, który pojawia się po analizowanym wierszu (posiada indeks większy o 1). Nie musimy w ten sposób używać skomplikowanych podzapytań ani self-join, aby zwrócić następnik danego wiersza. 
  LAG() zwraca wartość z wiersza, który pojawia się przed analizowanym wierszem (posiada indeks mnniejszy o 1)
 
  Drugi select uzupełnia nam miejsce null w pierwszym wierszu, ponieważ ograniczenie w klauzuli where dotyczy tymczasowej tabeli utworzonej klauzulą with (a nie wierszy analizowanych w głównym zapytaniu z funkcją okna, jak w przypadku piwerszego selecta. Sytuacja jest dość podobna do obserwacji z zadania 2.
-```
+
 Zadanie
 
 Spróbuj uzyskać ten sam wynik bez użycia funkcji okna, porównaj wyniki, czasy i plany zapytań. Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
@@ -893,13 +888,14 @@ from products
 order by categoryid, unitprice desc;
 ```
 ![alt text](_img/_report/image39.png)
-```sql
+
 Funkcja first_value() zwraca wartość kolumny (określonej w argumencie) z pierwszego wiersza w uporządkowanym zbiorze danych, które jest określone przez funkcję okna. Innymi słowy, zwraca wartość kolumny z pierwszego wiersza w hierarchii, którą ustala funkcja okna (tu najdroższy w tej samej kategorii).
 
 Funkcja last_value() zwraca wartość kolumny (określonej w argumencie) z ostatniego wiersza o takiej samej wartości porządkującej w partycjonowanym zbiorze danych. Oznacza to, że zwraca wartość kolumny z ostatniego wiersza w partycji, który ma tę samą wartość, jak wartość porządkująca, według której jest sortowany zbiór danych (to ostatni z kategorii o tej samej cenie, co w wierszu).
 
 Żeby otrzymać najtańszy produkt danej kategorii, można ponownie skorzystać z first_value() i odwrócić kolejność porządku (usunąć desc):
 
+```sql
 first_value(productname) over (partition by categoryid   
 order by unitprice) first, 
 
