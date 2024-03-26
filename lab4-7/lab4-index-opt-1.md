@@ -214,7 +214,10 @@ Użyj **Start Analysis**:
 
 Zaobserwuj wyniki w **Recommendations**.
 
+![img.png](img.png)
+
 Przejdź do zakładki **Reports**. Sprawdź poszczególne raporty. Główną uwagę zwróć na koszty i ich poprawę:
+
 
 
 <!-- ![[_img/index4-1.png | 500]] -->
@@ -223,13 +226,35 @@ Przejdź do zakładki **Reports**. Sprawdź poszczególne raporty. Główną uwa
 
 
 Zapisz poszczególne rekomendacje:
+![img_1.png](img_1.png)
 
 Uruchom zapisany skrypt w Management Studio.
+
 
 Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
 
 ---
+
 > Wyniki: 
+
+
+![img_2.png](img_2.png)
+
+Zapytanie 1:
+![img_3.png](img_3.png)
+![img_4.png](img_4.png)
+
+Zapytanie 2:
+![img_5.png](img_5.png)
+![img_6.png](img_6.png)
+
+Zapytanie 3:
+![img_7.png](img_7.png)
+![img_8.png](img_8.png)
+
+Zapytanie 4:
+![img_9.png](img_9.png)
+![img_10.png](img_10.png)
 
 ```sql
 --  ...
