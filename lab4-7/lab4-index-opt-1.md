@@ -30,23 +30,7 @@ Swoje odpowiedzi wpisuj w miejsca oznaczone jako:
 ```sql
 --  ...
 ```
-Zapytanie 1
-![img.png](img/img.png)
-![img_2.png](img/img_2.png)
 
-Zapytanie 2
-![img_3.png](img/img_3.png)
-![img_4.png](img/img_4.png)
-
-Zapytanie 3
-
-![img_5.png](img/img_5.png)
-![img_6.png](img/img_6.png)
-
-Zapytanie 4
-
-![img_7.png](img/img_7.png)
-![img_8.png](img/img_8.png)
 ---
 
 Ważne/wymagane są komentarze.
@@ -164,8 +148,32 @@ Teraz wykonaj poszczególne zapytania (najlepiej każde analizuj oddzielnie). Co
 ---
 > Wyniki: 
 
+Zapytanie 1:
+
+![img.png](img/img.png)
+![img_2.png](img/img_2.png)
+
+Zapytanie 2:
+
+![img_3.png](img/img_3.png)
+![img_4.png](img/img_4.png)
+
+Zapytanie 3:
+
+![img_5.png](img/img_5.png)
+![img_6.png](img/img_6.png)
+
+Zapytanie 4:
+
+![img_7.png](img/img_7.png)
+![img_8.png](img/img_8.png)
+
+
 ```sql
---  ...
+Komentarz:
+
+Każde zapytanie - zarówno w analizie planów, jak i statystykach zapytania ujawniają brak indeksu na tabelach salesorderheader oraz salesorderdetail.
+W każdym zapytaniu węzeł grafu (liść) związany z przeszukiwaniem tabeli na drzewie wykonywnaych akcji wiąże się z wysokim kosztem wykonywania.
 ```
 
 ---
