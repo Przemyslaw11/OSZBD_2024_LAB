@@ -17,9 +17,7 @@
 ---
 
 **Imię i nazwisko:**
-
 Przemysław Spyra, Piotr Urbańczyk
-
 --- 
 
 Celem ćwiczenia jest zapoznanie się z planami wykonania zapytań (execution plans), oraz z budową i możliwością wykorzystaniem indeksów.
@@ -141,37 +139,36 @@ Włącz dwie opcje: **Include Actual Execution Plan** oraz **Include Live Query 
 <!-- ![[_img/index1-1.png | 500]] -->
 
 
-<img src="_img/index1-1.png" alt="image" width="500" height="auto">
+<img src="../../../OSZBD_2024_LAB/lab4-7/_img/index1-1.png" alt="image" width="500" height="auto">
 
 
 Teraz wykonaj poszczególne zapytania (najlepiej każde analizuj oddzielnie). Co można o nich powiedzieć? Co sprawdzają? Jak można je zoptymalizować?  
 (Hint: aby wykonać tylko fragment kodu SQL znajdującego się w edytorze, zaznacz go i naciśnij F5)
 
 ---
-> Wyniki: 
 
 Zapytanie 1:
 
-![img.png](img/img.png)
-![img_2.png](img/img_2.png)
+![img.png](../../../OSZBD_2024_LAB/lab4-7/img/img.png)
+![img_2.png](../../../OSZBD_2024_LAB/lab4-7/img/img_2.png)
 
 Zapytanie 2:
 
-![img_3.png](img/img_3.png)
-![img_4.png](img/img_4.png)
+![img_3.png](../../../OSZBD_2024_LAB/lab4-7/img/img_3.png)
+![img_4.png](../../../OSZBD_2024_LAB/lab4-7/img/img_4.png)
 
 Zapytanie 3:
 
-![img_5.png](img/img_5.png)
-![img_6.png](img/img_6.png)
+![img_5.png](../../../OSZBD_2024_LAB/lab4-7/img/img_5.png)
+![img_6.png](../../../OSZBD_2024_LAB/lab4-7/img/img_6.png)
 
 Zapytanie 4:
 
-![img_7.png](img/img_7.png)
-![img_8.png](img/img_8.png)
+![img_7.png](../../../OSZBD_2024_LAB/lab4-7/img/img_7.png)
+![img_8.png](../../../OSZBD_2024_LAB/lab4-7/img/img_8.png)
 
 
-```sql
+
 Komentarz:
 
 Wszystkie powyższe zapytania - zarówno w analizie planów, jak i statystykach wykonania - ujawniają brak indeksu na tabelach salesorderheader oraz salesorderdetail.
@@ -179,9 +176,6 @@ Wszystkie powyższe zapytania - zarówno w analizie planów, jak i statystykach 
 W każdym z zapytań węzeł grafu (liść) reprezentujący przeszukiwanie tabeli na drzewie wykonywnaych akcji wiąże się z wysokim kosztem wykonywania. Najprawdopodobniej wynika to właśnie z braku indeksu.
 
 Należy się spodziewać, że założenie indeksu na tych tabelach przyniesie redukcję czasu i kosztów wykonania powyższych i im podobnych zapytań.
-```
-
----
 
 
 
@@ -195,27 +189,42 @@ Zaznacz wszystkie zapytania, i uruchom je w **Database Engine Tuning Advisor**:
 
 <!-- ![[_img/index1-12.png | 500]] -->
 
-<img src="_img/index1-2.png" alt="image" width="500" height="auto">
+<img src="../../../OSZBD_2024_LAB/lab4-7/_img/index1-2.png" alt="image" width="500" height="auto">
 
 
 Sprawdź zakładkę **Tuning Options**, co tam można skonfigurować?
 
----
-> Wyniki: 
 
----
+![img_23.png](../../../OSZBD_2024_LAB/lab4-7/img_23.png)
+
+Możliwe parametry konfiguracji to:
+
+ - Ograniczenie czasu tuningu/dostrajania (Limit tuning time): Umożliwia określenie, ile czasu narzędzie ma poświęcić na analizę i generowanie rekomendacji. Można wybrać konkretny dzień i czas zakończenia procesu.
+
+ - Fizyczne struktury przechowujące dane do użycia w bazie danych (Physical Design Structures (PDS) to use in database). Możemy tu wybrać: indeksy lub indeksowane widoki, niezgrupowane indeksy (nonclustered indexes). Możemy odznaczyć opcję uwzględnienia w rekomendacjach indeksów filtrowanych (filtered indexes) oraz opcję rekomendowania indeksów kolumnowych (columnstore indexes). W końcu,
+możemy także wybrać opcję analizy wykorzystania wyłącznie już istniejących struktur fizycznych, bez proponowania nowych (Evaluate utilization of existing PDS only).
+
+- Strategia partycjonowania (Partitioning strategy to employ). Możemy tu wybrać: brak partycjonowania, partycjonowanie pełne oraz równomierne(?) (Aligned partitioning).
+
+- Jakie fizyczne struktury przechowywania danych zachować (Physical Design Structures (PDS) to keep in database). Możemy zachować wszystkie, żadne, tylko indeksy, tylko indseksy zgrupowane, tylko równomierne(?) partycjonowanie.
+
+Mamy także opcje zaawansowane, w których możemy:
+- Określić maksymalną przestrzeń rekomendacji (Define max. space for recommendations (MB)).
+- Wybrać uwzględnienie zdarzeń z bufora planów z wszystkich baz danych (Include plan cache events from all databases).
+- Ustawić maksymalną liczbę kolumn na indeks (Max. columns per index).
+- Możliwość przerywania lub nieprzerywania pracy bazy danych w trakcie tuningu  (Online index recommendations).
 
 
 Użyj **Start Analysis**:
 
 <!-- ![[_img/index1-3.png | 500]] -->
 
-<img src="_img/index1-3.png" alt="image" width="500" height="auto">
+<img src="../../../OSZBD_2024_LAB/lab4-7/_img/index1-3.png" alt="image" width="500" height="auto">
 
 
 Zaobserwuj wyniki w **Recommendations**.
 
-![img.png](img.png)
+![img.png](../../../OSZBD_2024_LAB/lab4-7/img.png)
 
 Przejdź do zakładki **Reports**. Sprawdź poszczególne raporty. Główną uwagę zwróć na koszty i ich poprawę:
 
@@ -223,16 +232,27 @@ Przejdź do zakładki **Reports**. Sprawdź poszczególne raporty. Główną uwa
 
 <!-- ![[_img/index4-1.png | 500]] -->
 
-<img src="_img/index1-4.png" alt="image" width="500" height="auto">
+<img src="../../../OSZBD_2024_LAB/lab4-7/_img/index1-4.png" alt="image" width="500" height="auto">
 
 
 Zapisz poszczególne rekomendacje:
-![img_1.png](img_1.png)
+![img_1.png](../../../OSZBD_2024_LAB/lab4-7/img_1.png)
 
 Uruchom zapisany skrypt w Management Studio.
 
 
 Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
+
+---
+
+
+![img_2.png](../../../OSZBD_2024_LAB/lab4-7/img_2.png)
+
+
+---
+
+
+Sprawdź jak zmieniły się Execution Plany. Opisz zmiany:
 
 ---
 
@@ -268,9 +288,9 @@ from sys.dm_db_index_physical_stats (db_id('adventureworks2017')
 Jakie są według Ciebie najważniejsze pola?
 
 ---
-> Wyniki: 
-![img_11.png](img_11.png)
-![img_12.png](img_12.png)
+
+![img_11.png](../../../OSZBD_2024_LAB/lab4-7/img_11.png)
+![img_12.png](../../../OSZBD_2024_LAB/lab4-7/img_12.png)
 
 Według mnie najważniejsze pola to:
 
@@ -290,9 +310,6 @@ Według mnie najważniejsze pola to:
 
 
 ---
-
-
-
 
 Sprawdź, które indeksy w bazie danych wymagają reorganizacji:
 
@@ -316,10 +333,10 @@ and index_id not in (0) --only clustered and nonclustered indexes
 
 
 ---
-> Wyniki: 
+
 > zrzut ekranu/komentarz:
 
-![img_13.png](img_13.png)
+![img_13.png](../../../OSZBD_2024_LAB/lab4-7/img_13.png)
 
 
 ---
@@ -345,10 +362,10 @@ and index_id not in (0) --only clustered and nonclustered indexes
 ```
 
 ---
-> Wyniki: 
+
 > zrzut ekranu/komentarz:
 
-![img_14.png](img_14.png)
+![img_14.png](../../../OSZBD_2024_LAB/lab4-7/img_14.png)
 
 ---
 
@@ -357,7 +374,6 @@ Czym się różni przebudowa indeksu od reorganizacji?
 (Podpowiedź: [http://blog.plik.pl/2014/12/defragmentacja-indeksow-ms-sql.html](http://blog.plik.pl/2014/12/defragmentacja-indeksow-ms-sql.html))
 
 ---
-> Wyniki: 
 
 Przebudowa indeksu polega na całkowitym ponownym zbudowaniu struktury indeksu od podstaw.
 Podczas przebudowy indeksu baza danych usuwa istniejący indeks i tworzy go ponownie na podstawie danych w tabeli.
@@ -372,10 +388,10 @@ Reorganizacja jest zazwyczaj szybsza i mniej inwazyjna dla systemu niż przebudo
 Sprawdź co przechowuje tabela sys.dm_db_index_usage_stats:
 
 ---
-> Wyniki: 
 
 
-![img_15.png](img_15.png)
+
+![img_15.png](../../../OSZBD_2024_LAB/lab4-7/img_15.png)
 
 Tabela sys.dm_db_index_usage_stats przechowuje statystyki dotyczące używania indeksów w bazie danych, zawierając informacje takie jak liczba operacji wyszukiwania, skanowania, odwołań i aktualizacji wykonanych przez użytkowników na poszczególnych indeksach. Umożliwia to monitorowanie aktywności indeksów w celu optymalizacji wydajności zapytań poprzez analizę ich używania.
 
@@ -419,9 +435,9 @@ on sc.schema_id = ob.schema_id
 Napisz przygotowane komendy SQL do naprawy indeksów:
 
 ---
-> Wyniki: 
 
-![img_16.png](img_16.png)
+
+![img_16.png](../../../OSZBD_2024_LAB/lab4-7/img_16.png)
 
 ```sql
 alter index XMLPATH_Person_Demographics on Person.Person rebuild
@@ -451,11 +467,10 @@ dbcc ind ('adventureworks2017', 'person.address', 1)
 Zapisz sobie kilka różnych typów stron, dla różnych indeksów:
 
 ---
-> Wyniki: 
 
-![img_17.png](img_17.png)
-![img_19.png](img_19.png)
-![img_18.png](img_18.png)
+![img_17.png](../../../OSZBD_2024_LAB/lab4-7/img_17.png)
+![img_19.png](../../../OSZBD_2024_LAB/lab4-7/img_19.png)
+![img_18.png](../../../OSZBD_2024_LAB/lab4-7/img_18.png)
 ---
 
 Włącz flagę 3604 zanim zaczniesz przeglądać strony:
@@ -474,10 +489,10 @@ dbcc page('adventureworks2017', 1, 13720, 3);
 Zapisz obserwacje ze stron. Co ciekawego udało się zaobserwować?
 
 ---
-> Wyniki: 
-![img_21.png](img_21.png)
-![img_22.png](img_22.png)
-![img_20.png](img_20.png)
+
+![img_21.png](../../../OSZBD_2024_LAB/lab4-7/img_21.png)
+![img_22.png](../../../OSZBD_2024_LAB/lab4-7/img_22.png)
+![img_20.png](../../../OSZBD_2024_LAB/lab4-7/img_20.png)
 
 Zauważyliśmy cztery ciekawe obserwacje:
 
