@@ -139,7 +139,7 @@ Włącz dwie opcje: **Include Actual Execution Plan** oraz **Include Live Query 
 <!-- ![[_img/index1-1.png | 500]] -->
 
 
-<img src="../../../OSZBD_2024_LAB/lab4-7/_img/index1-1.png" alt="image" width="500" height="auto">
+<img src="_img/index1-1.png" alt="image" width="500" height="auto">
 
 
 Teraz wykonaj poszczególne zapytania (najlepiej każde analizuj oddzielnie). Co można o nich powiedzieć? Co sprawdzają? Jak można je zoptymalizować?  
@@ -149,23 +149,23 @@ Teraz wykonaj poszczególne zapytania (najlepiej każde analizuj oddzielnie). Co
 
 Zapytanie 1:
 
-![img.png](../../../OSZBD_2024_LAB/lab4-7/img/img.png)
-![img_2.png](../../../OSZBD_2024_LAB/lab4-7/img/img_2.png)
+![img.png](img/img.png)
+![img_2.png](img/img_2.png)
 
 Zapytanie 2:
 
-![img_3.png](../../../OSZBD_2024_LAB/lab4-7/img/img_3.png)
-![img_4.png](../../../OSZBD_2024_LAB/lab4-7/img/img_4.png)
+![img_3.png](img/img_3.png)
+![img_4.png](img/img_4.png)
 
 Zapytanie 3:
 
-![img_5.png](../../../OSZBD_2024_LAB/lab4-7/img/img_5.png)
-![img_6.png](../../../OSZBD_2024_LAB/lab4-7/img/img_6.png)
+![img_5.png](img/img_5.png)
+![img_6.png](img/img_6.png)
 
 Zapytanie 4:
 
-![img_7.png](../../../OSZBD_2024_LAB/lab4-7/img/img_7.png)
-![img_8.png](../../../OSZBD_2024_LAB/lab4-7/img/img_8.png)
+![img_7.png](img/img_7.png)
+![img_8.png](img/img_8.png)
 
 
 
@@ -189,13 +189,13 @@ Zaznacz wszystkie zapytania, i uruchom je w **Database Engine Tuning Advisor**:
 
 <!-- ![[_img/index1-12.png | 500]] -->
 
-<img src="../../../OSZBD_2024_LAB/lab4-7/_img/index1-2.png" alt="image" width="500" height="auto">
+<img src="_img/index1-2.png" alt="image" width="500" height="auto">
 
 
 Sprawdź zakładkę **Tuning Options**, co tam można skonfigurować?
 
 
-![img_23.png](../../../OSZBD_2024_LAB/lab4-7/img_23.png)
+![img_23.png](img_23.png)
 
 Możliwe parametry konfiguracji to:
 
@@ -219,12 +219,12 @@ Użyj **Start Analysis**:
 
 <!-- ![[_img/index1-3.png | 500]] -->
 
-<img src="../../../OSZBD_2024_LAB/lab4-7/_img/index1-3.png" alt="image" width="500" height="auto">
+<img src="_img/index1-3.png" alt="image" width="500" height="auto">
 
 
 Zaobserwuj wyniki w **Recommendations**.
 
-![img.png](../../../OSZBD_2024_LAB/lab4-7/img.png)
+![img.png](img.png)
 
 Przejdź do zakładki **Reports**. Sprawdź poszczególne raporty. Główną uwagę zwróć na koszty i ich poprawę:
 
@@ -232,11 +232,11 @@ Przejdź do zakładki **Reports**. Sprawdź poszczególne raporty. Główną uwa
 
 <!-- ![[_img/index4-1.png | 500]] -->
 
-<img src="../../../OSZBD_2024_LAB/lab4-7/_img/index1-4.png" alt="image" width="500" height="auto">
+<img src="_img/index1-4.png" alt="image" width="500" height="auto">
 
 
 Zapisz poszczególne rekomendacje:
-![img_1.png](../../../OSZBD_2024_LAB/lab4-7/img_1.png)
+![img_1.png](img_1.png)
 
 Uruchom zapisany skrypt w Management Studio.
 
@@ -246,7 +246,7 @@ Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
 ---
 
 
-![img_2.png](../../../OSZBD_2024_LAB/lab4-7/img_2.png)
+![img_2.png](img_2.png)
 
 
 ---
@@ -289,8 +289,8 @@ Jakie są według Ciebie najważniejsze pola?
 
 ---
 
-![img_11.png](../../../OSZBD_2024_LAB/lab4-7/img_11.png)
-![img_12.png](../../../OSZBD_2024_LAB/lab4-7/img_12.png)
+![img_11.png](img_11.png)
+![img_12.png](img_12.png)
 
 Według mnie najważniejsze pola to:
 
@@ -336,7 +336,7 @@ and index_id not in (0) --only clustered and nonclustered indexes
 
 > zrzut ekranu/komentarz:
 
-![img_13.png](../../../OSZBD_2024_LAB/lab4-7/img_13.png)
+![img_13.png](img_13.png)
 
 
 ---
@@ -365,7 +365,7 @@ and index_id not in (0) --only clustered and nonclustered indexes
 
 > zrzut ekranu/komentarz:
 
-![img_14.png](../../../OSZBD_2024_LAB/lab4-7/img_14.png)
+![img_14.png](img_14.png)
 
 ---
 
@@ -391,7 +391,7 @@ Sprawdź co przechowuje tabela sys.dm_db_index_usage_stats:
 
 
 
-![img_15.png](../../../OSZBD_2024_LAB/lab4-7/img_15.png)
+![img_15.png](img_15.png)
 
 Tabela sys.dm_db_index_usage_stats przechowuje statystyki dotyczące używania indeksów w bazie danych, zawierając informacje takie jak liczba operacji wyszukiwania, skanowania, odwołań i aktualizacji wykonanych przez użytkowników na poszczególnych indeksach. Umożliwia to monitorowanie aktywności indeksów w celu optymalizacji wydajności zapytań poprzez analizę ich używania.
 
@@ -437,7 +437,7 @@ Napisz przygotowane komendy SQL do naprawy indeksów:
 ---
 
 
-![img_16.png](../../../OSZBD_2024_LAB/lab4-7/img_16.png)
+![img_16.png](img_16.png)
 
 ```sql
 alter index XMLPATH_Person_Demographics on Person.Person rebuild
@@ -468,9 +468,9 @@ Zapisz sobie kilka różnych typów stron, dla różnych indeksów:
 
 ---
 
-![img_17.png](../../../OSZBD_2024_LAB/lab4-7/img_17.png)
-![img_19.png](../../../OSZBD_2024_LAB/lab4-7/img_19.png)
-![img_18.png](../../../OSZBD_2024_LAB/lab4-7/img_18.png)
+![img_17.png](img_17.png)
+![img_19.png](img_19.png)
+![img_18.png](img_18.png)
 ---
 
 Włącz flagę 3604 zanim zaczniesz przeglądać strony:
@@ -490,9 +490,9 @@ Zapisz obserwacje ze stron. Co ciekawego udało się zaobserwować?
 
 ---
 
-![img_21.png](../../../OSZBD_2024_LAB/lab4-7/img_21.png)
-![img_22.png](../../../OSZBD_2024_LAB/lab4-7/img_22.png)
-![img_20.png](../../../OSZBD_2024_LAB/lab4-7/img_20.png)
+![img_21.png](img_21.png)
+![img_22.png](img_22.png)
+![img_20.png](img_20.png)
 
 Zauważyliśmy cztery ciekawe obserwacje:
 
