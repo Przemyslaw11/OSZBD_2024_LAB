@@ -18,6 +18,8 @@
 
 **Imię i nazwisko:**
 
+Przemysław Spyra, Piotr Urbańczyk
+
 --- 
 
 Celem ćwiczenia jest zapoznanie się z planami wykonania zapytań (execution plans), oraz z budową i możliwością wykorzystaniem indeksów.
@@ -172,8 +174,11 @@ Zapytanie 4:
 ```sql
 Komentarz:
 
-Każde zapytanie - zarówno w analizie planów, jak i statystykach zapytania ujawniają brak indeksu na tabelach salesorderheader oraz salesorderdetail.
-W każdym zapytaniu węzeł grafu (liść) związany z przeszukiwaniem tabeli na drzewie wykonywnaych akcji wiąże się z wysokim kosztem wykonywania.
+Wszystkie powyższe zapytania - zarówno w analizie planów, jak i statystykach wykonania - ujawniają brak indeksu na tabelach salesorderheader oraz salesorderdetail.
+
+W każdym z zapytań węzeł grafu (liść) reprezentujący przeszukiwanie tabeli na drzewie wykonywnaych akcji wiąże się z wysokim kosztem wykonywania. Najprawdopodobniej wynika to właśnie z braku indeksu.
+
+Należy się spodziewać, że założenie indeksu na tych tabelach przyniesie redukcję czasu i kosztów wykonania powyższych i im podobnych zapytań.
 ```
 
 ---
@@ -199,7 +204,23 @@ Sprawdź zakładkę **Tuning Options**, co tam można skonfigurować?
 > Wyniki: 
 
 ```sql
---  ...
+Możliwe parametry konfiguracji to:
+
+ - Ograniczenie czasu tuningu/dostrajania (Limit tuning time): Umożliwia określenie, ile czasu narzędzie ma poświęcić na analizę i generowanie rekomendacji. Można wybrać konkretny dzień i czas zakończenia procesu.
+
+ - Fizyczne struktury przechowujące dane do użycia w bazie danych (Physical Design Structures (PDS) to use in database). Możemy tu wybrać: indeksy lub indeksowane widoki, niezgrupowane indeksy (nonclustered indexes). Możemy odznaczyć opcję uwzględnienia w rekomendacjach indeksów filtrowanych (filtered indexes) oraz opcję rekomendowania indeksów kolumnowych (columnstore indexes). W końcu,
+możemy także wybrać opcję analizy wykorzystania wyłącznie już istniejących struktur fizycznych, bez proponowania nowych (Evaluate utilization of existing PDS only).
+
+- Strategia partycjonowania (Partitioning strategy to employ). Możemy tu wybrać: brak partycjonowania, partycjonowanie pełne oraz równomierne(?) (Aligned partitioning).
+
+- Jakie fizyczne struktury przechowywania danych zachować (Physical Design Structures (PDS) to keep in database). Możemy zachować wszystkie, żadne, tylko indeksy, tylko indseksy zgrupowane, tylko równomierne(?) partycjonowanie.
+
+Mamy także opcje zaawansowane, w których możemy:
+- Określić maksymalną przestrzeń rekomendacji (Define max. space for recommendations (MB)).
+- Wybrać uwzględnienie zdarzeń z bufora planów z wszystkich baz danych (Include plan cache events from all databases).
+- Ustawić maksymalną liczbę kolumn na indeks (Max. columns per index).
+- Możliwość przerywania lub nieprzerywania pracy bazy danych w trakcie tuningu  (Online index recommendations).
+
 ```
 
 ---
@@ -235,26 +256,7 @@ Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
 
 ---
 
-> Wyniki: 
 
-
-![img_2.png](img_2.png)
-
-Zapytanie 1:
-![img_3.png](img_3.png)
-![img_4.png](img_4.png)
-
-Zapytanie 2:
-![img_5.png](img_5.png)
-![img_6.png](img_6.png)
-
-Zapytanie 3:
-![img_7.png](img_7.png)
-![img_8.png](img_8.png)
-
-Zapytanie 4:
-![img_9.png](img_9.png)
-![img_10.png](img_10.png)
 
 ```sql
 --  ...
