@@ -18,6 +18,8 @@
 
 **Imię i nazwisko:**
 
+Przemysław Spyra, Piotr Urbańczyk
+
 --- 
 
 Celem ćwiczenia jest zapoznanie się z planami wykonania zapytań (execution plans), oraz z budową i możliwością wykorzystaniem indeksów.
@@ -172,8 +174,11 @@ Zapytanie 4:
 ```sql
 Komentarz:
 
-Każde zapytanie - zarówno w analizie planów, jak i statystykach zapytania ujawniają brak indeksu na tabelach salesorderheader oraz salesorderdetail.
-W każdym zapytaniu węzeł grafu (liść) związany z przeszukiwaniem tabeli na drzewie wykonywnaych akcji wiąże się z wysokim kosztem wykonywania.
+Wszystkie powyższe zapytania - zarówno w analizie planów, jak i statystykach wykonania - ujawniają brak indeksu na tabelach salesorderheader oraz salesorderdetail.
+
+W każdym z zapytań węzeł grafu (liść) reprezentujący przeszukiwanie tabeli na drzewie wykonywnaych akcji wiąże się z wysokim kosztem wykonywania. Najprawdopodobniej wynika to właśnie z braku indeksu.
+
+Należy się spodziewać, że założenie indeksu na tych tabelach przyniesie redukcję czasu i kosztów wykonania powyższych i im podobnych zapytań.
 ```
 
 ---
@@ -197,34 +202,6 @@ Sprawdź zakładkę **Tuning Options**, co tam można skonfigurować?
 
 ---
 > Wyniki: 
-
-![img_23.png](img_23.png)
-
-Można tutaj skonfigurować:
-
-**Limit czasu tuningu**: Maksymalny czas, jaki narzędzie może poświęcić na analizę i proponowanie optymalizacji.
-
-**Struktury projektowania fizycznego (PDS) do użycia w bazie danych**: Opcje dotyczące wykorzystania różnych struktur, takich jak indeksy, widoki indeksowane, partycjonowanie etc.
-
-**Indeksy i widoki indeksowane**: Określa, które indeksy i widoki indeksowane należy uwzględnić w optymalizacji.
-
-**Strategia partycjonowania do zastosowania**: Decyduje, czy baza danych powinna być partycjonowana, a jeśli tak, to w jaki sposób.
-
-**Struktury projektowania fizycznego (PDS) do zachowania w bazie danych**: Decyduje, które istniejące struktury projektowania fizycznego (indeksy, partycje etc) należy zachować w wyniku optymalizacji.
-
-**Indeksowane widoki**: Decyduje o sposobie obsługi indeksowanych widoków.
-
-**Indeksy niemającece klastera**: Określa, czy uwzględniać w optymalizacji indeksy niemające klastra.
-
-**Uwzględnij indeksy filtrowane**: Decyduje, czy narzędzie powinno uwzględnić indeksy filtrowane w procesie optymalizacji.
-
-**Polecane indeksy kolumnowe**: Opcja sugerująca użycie indeksów kolumnowych.
-
-**Pełne partycjonowanie**: Decyduje o partycjonowaniu bazy danych.
-
-**Zachowaj tylko indeksy**: Określa, czy narzędzie powinno zachować tylko indeksy podczas optymalizacji.
-
-**Zachowaj tylko indeksy klastra**: Decyduje, czy zachować tylko indeksy klastra.
 
 ---
 
@@ -258,37 +235,6 @@ Uruchom zapisany skrypt w Management Studio.
 Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
 
 ---
-
-> Wyniki: 
-
-
-![img_2.png](img_2.png)
-
-
----
-
-
-Sprawdź jak zmieniły się Execution Plany. Opisz zmiany:
-
----
-> Wyniki: 
-
-
-Zapytanie 1:
-![img_3.png](img_3.png)
-![img_4.png](img_4.png)
-
-Zapytanie 2:
-![img_5.png](img_5.png)
-![img_6.png](img_6.png)
-
-Zapytanie 3:
-![img_7.png](img_7.png)
-![img_8.png](img_8.png)
-
-Zapytanie 4:
-![img_9.png](img_9.png)
-![img_10.png](img_10.png)
 
 
 ---
