@@ -17,9 +17,7 @@
 ---
 
 **Imię i nazwisko:**
-
 Przemysław Spyra, Piotr Urbańczyk
-
 --- 
 
 Celem ćwiczenia jest zapoznanie się z planami wykonania zapytań (execution plans), oraz z budową i możliwością wykorzystaniem indeksów.
@@ -148,7 +146,6 @@ Teraz wykonaj poszczególne zapytania (najlepiej każde analizuj oddzielnie). Co
 (Hint: aby wykonać tylko fragment kodu SQL znajdującego się w edytorze, zaznacz go i naciśnij F5)
 
 ---
-> Wyniki: 
 
 Zapytanie 1:
 
@@ -171,7 +168,7 @@ Zapytanie 4:
 ![img_8.png](img/img_8.png)
 
 
-```sql
+
 Komentarz:
 
 Wszystkie powyższe zapytania - zarówno w analizie planów, jak i statystykach wykonania - ujawniają brak indeksu na tabelach salesorderheader oraz salesorderdetail.
@@ -179,9 +176,6 @@ Wszystkie powyższe zapytania - zarówno w analizie planów, jak i statystykach 
 W każdym z zapytań węzeł grafu (liść) reprezentujący przeszukiwanie tabeli na drzewie wykonywnaych akcji wiąże się z wysokim kosztem wykonywania. Najprawdopodobniej wynika to właśnie z braku indeksu.
 
 Należy się spodziewać, że założenie indeksu na tych tabelach przyniesie redukcję czasu i kosztów wykonania powyższych i im podobnych zapytań.
-```
-
----
 
 
 
@@ -200,10 +194,9 @@ Zaznacz wszystkie zapytania, i uruchom je w **Database Engine Tuning Advisor**:
 
 Sprawdź zakładkę **Tuning Options**, co tam można skonfigurować?
 
----
-> Wyniki: 
 
-```sql
+![img_23.png](img_23.png)
+
 Możliwe parametry konfiguracji to:
 
  - Ograniczenie czasu tuningu/dostrajania (Limit tuning time): Umożliwia określenie, ile czasu narzędzie ma poświęcić na analizę i generowanie rekomendacji. Można wybrać konkretny dzień i czas zakończenia procesu.
@@ -220,10 +213,6 @@ Mamy także opcje zaawansowane, w których możemy:
 - Wybrać uwzględnienie zdarzeń z bufora planów z wszystkich baz danych (Include plan cache events from all databases).
 - Ustawić maksymalną liczbę kolumn na indeks (Max. columns per index).
 - Możliwość przerywania lub nieprzerywania pracy bazy danych w trakcie tuningu  (Online index recommendations).
-
-```
-
----
 
 
 Użyj **Start Analysis**:
@@ -257,10 +246,13 @@ Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
 ---
 
 
+![img_2.png](img_2.png)
+
 
 ```sql
 Indeksy zostały zaptoponowane do zapytań, ponieważ przyczynią się do optymalizacji ich kosztów. Wyliczona w analizie poprawa selektów szacowana jest na od 99,74 % dla zapytania 3 do 28,59% dla zapytania 2.
 ```
+
 
 ---
 
@@ -268,11 +260,7 @@ Indeksy zostały zaptoponowane do zapytań, ponieważ przyczynią się do optyma
 Sprawdź jak zmieniły się Execution Plany. Opisz zmiany:
 
 ---
-> Wyniki: 
 
-```sql
---  ...
-```
 
 ---
 
@@ -305,16 +293,28 @@ from sys.dm_db_index_physical_stats (db_id('adventureworks2017')
 Jakie są według Ciebie najważniejsze pola?
 
 ---
-> Wyniki: 
 
-```sql
---  ...
-```
+![img_11.png](img_11.png)
+![img_12.png](img_12.png)
+
+Według mnie najważniejsze pola to:
+
+**avg_fragmentation_in_percent**: Wskaźnik fragmentacji indeksu, który informuje o stopniu fragmentacji danych w indeksie. Wyższa wartość oznacza większą fragmentację, co może prowadzić do wolniejszych operacji odczytu i zapisu.
+
+**index_type**: Typ indeksu (np. clustered, non-clustered), co jest istotne dla zrozumienia struktury indeksu i jego wpływu na zapytania SQL.
+
+**page_count**: Liczba stron zajmowanych przez indeks, co może być użyteczne do oceny rozmiaru indeksu i wykorzystania pamięci.
+
+**record_count**: Liczba rekordów w indeksie, co pomaga zrozumieć, jak wiele danych jest zindeksowanych.
+
+**avg_page_space_used_in_percent**: Średni używany procent miejsca na stronie, który może wskazywać na to, jak efektywnie strony są wykorzystywane przez indeks.
+
+**avg_record_size_in_bytes**: Średni rozmiar rekordu w bajtach, co może mieć znaczenie dla oceny zużycia pamięci i wydajności zapytań.
+
+**index_depth** i **index_level**: Informacje o głębokości i poziomach indeksu, które są istotne dla zrozumienia jego struktury i wpływu na wydajność zapytań.
+
 
 ---
-
-
-
 
 Sprawdź, które indeksy w bazie danych wymagają reorganizacji:
 
@@ -338,12 +338,11 @@ and index_id not in (0) --only clustered and nonclustered indexes
 
 
 ---
-> Wyniki: 
+
 > zrzut ekranu/komentarz:
 
-```sql
---  ...
-```
+![img_13.png](img_13.png)
+
 
 ---
 
@@ -368,12 +367,10 @@ and index_id not in (0) --only clustered and nonclustered indexes
 ```
 
 ---
-> Wyniki: 
+
 > zrzut ekranu/komentarz:
 
-```sql
---  ...
-```
+![img_14.png](img_14.png)
 
 ---
 
@@ -382,22 +379,26 @@ Czym się różni przebudowa indeksu od reorganizacji?
 (Podpowiedź: [http://blog.plik.pl/2014/12/defragmentacja-indeksow-ms-sql.html](http://blog.plik.pl/2014/12/defragmentacja-indeksow-ms-sql.html))
 
 ---
-> Wyniki: 
 
-```sql
---  ...
-```
+Przebudowa indeksu polega na całkowitym ponownym zbudowaniu struktury indeksu od podstaw.
+Podczas przebudowy indeksu baza danych usuwa istniejący indeks i tworzy go ponownie na podstawie danych w tabeli.
+Jest to bardziej czasochłonna operacja i może wymagać więcej zasobów niż reorganizacja.
+
+Reorganizacja indeksu polega na fizycznym przestawieniu i ponownym uporządkowaniu danych w istniejącym indeksie, aby zmniejszyć fragmentację.
+W odróżnieniu od przebudowy, reorganizacja nie tworzy indeksu od nowa, ale raczej dokonuje drobnych zmian w jego strukturze w celu poprawy wydajności.
+Reorganizacja jest zazwyczaj szybsza i mniej inwazyjna dla systemu niż przebudowa.
 
 ---
 
 Sprawdź co przechowuje tabela sys.dm_db_index_usage_stats:
 
 ---
-> Wyniki: 
 
-```sql
---  ...
-```
+
+
+![img_15.png](img_15.png)
+
+Tabela sys.dm_db_index_usage_stats przechowuje statystyki dotyczące używania indeksów w bazie danych, zawierając informacje takie jak liczba operacji wyszukiwania, skanowania, odwołań i aktualizacji wykonanych przez użytkowników na poszczególnych indeksach. Umożliwia to monitorowanie aktywności indeksów w celu optymalizacji wydajności zapytań poprzez analizę ich używania.
 
 ---
 
@@ -439,12 +440,15 @@ on sc.schema_id = ob.schema_id
 Napisz przygotowane komendy SQL do naprawy indeksów:
 
 ---
-> Wyniki: 
+
+
+![img_16.png](img_16.png)
 
 ```sql
---  ...
+alter index XMLPATH_Person_Demographics on Person.Person rebuild
+alter index XMLPROPERTY_Person_Demographics on Person.Person rebuild
+alter index XMLVALUE_Person_Demographics on Person.Person rebuild
 ```
-
 ---
 
 <div style="page-break-after: always;"></div>
@@ -468,12 +472,10 @@ dbcc ind ('adventureworks2017', 'person.address', 1)
 Zapisz sobie kilka różnych typów stron, dla różnych indeksów:
 
 ---
-> Wyniki: 
 
-```sql
---  ...
-```
-
+![img_17.png](img_17.png)
+![img_19.png](img_19.png)
+![img_18.png](img_18.png)
 ---
 
 Włącz flagę 3604 zanim zaczniesz przeglądać strony:
@@ -492,13 +494,20 @@ dbcc page('adventureworks2017', 1, 13720, 3);
 Zapisz obserwacje ze stron. Co ciekawego udało się zaobserwować?
 
 ---
-> Wyniki: 
 
-```sql
---  ...
-```
+![img_21.png](img_21.png)
+![img_22.png](img_22.png)
+![img_20.png](img_20.png)
 
----
+Zauważyliśmy cztery ciekawe obserwacje:
+
+**Informacje o stronie**: Na początku raportu otrzymujemy ogólne informacje o stronie, takie jak jej identyfikator (PAGE: (1:13720)) oraz dane o buforze (BUFFER). Informacje o buforze zawierają szczegóły na temat sposobu, w jaki strona jest przechowywana w pamięci podręcznej, takie jak adresy, statystyki odczytu/zapisu, czy stan błędu.
+
+**Nagłówek strony**: zawierający metadane dotyczące strony. Możemy zobaczyć identyfikator strony, wersję nagłówka, typ strony, poziom w hierarchii, flagi, informacje o obiekcie, indeksie, poprzedniej i następnej stronie, ilość slotów, ilość danych wolnych, zarezerwowane dane etc.
+
+**Status alokacji**: W sekcji "Allocation Status" możemy zobaczyć informacje o alokacji miejsca w różnych strukturach w bazie danych, takich jak GAM (Global Allocation Map), SGAM (Shared Global Allocation Map), PFS (Page Free Space), DIFF (Differential Changed Map) i ML (Minimum Log Map). Inforamcje przydają się do zarządzania przestrzenią w plikach bazy danych.
+
+**Dane**: Widać, że to rzeczywiste dane przechowywane na tej konkretnej stronie (coś jak zrzut pamięci). Dane te mają format szesnastkowy.
 
 Punktacja:
 
