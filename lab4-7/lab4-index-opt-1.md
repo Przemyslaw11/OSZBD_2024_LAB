@@ -259,7 +259,7 @@ Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
 
 
 ```sql
---  ...
+Indeksy zostały zaptoponowane do zapytań, ponieważ przyczynią się do optymalizacji ich kosztów. Wyliczona w analizie poprawa selektów szacowana jest na od 99,74 % dla zapytania 3 do 28,59% dla zapytania 2.
 ```
 
 ---
