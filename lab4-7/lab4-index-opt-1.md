@@ -173,7 +173,7 @@ Komentarz:
 
 Wszystkie powyższe zapytania - zarówno w analizie planów, jak i statystykach wykonania - ujawniają brak indeksu na tabelach salesorderheader oraz salesorderdetail.
 
-W każdym z zapytań węzeł grafu (liść) reprezentujący przeszukiwanie tabeli na drzewie wykonywnaych akcji wiąże się z wysokim kosztem wykonywania. Najprawdopodobniej wynika to właśnie z braku indeksu.
+W każdym z zapytań węzeł grafu (liść) reprezentujący przeszukiwanie tabeli na drzewie wykonywanych akcji wiąże się z wysokim kosztem wykonywania. Najprawdopodobniej wynika to właśnie z braku indeksu.
 
 Należy się spodziewać, że założenie indeksu na tych tabelach przyniesie redukcję czasu i kosztów wykonania powyższych i im podobnych zapytań.
 
@@ -232,10 +232,12 @@ Przejdź do zakładki **Reports**. Sprawdź poszczególne raporty. Główną uwa
 
 <!-- ![[_img/index4-1.png | 500]] -->
 
+
 <img src="_img/index1-4.png" alt="image" width="500" height="auto">
 
 
 Zapisz poszczególne rekomendacje:
+
 ![img_1.png](img_1.png)
 
 Uruchom zapisany skrypt w Management Studio.
@@ -245,7 +247,7 @@ Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
 
 ---
 
-Indeksy zostały zaptoponowane do zapytań, ponieważ przyczynią się do optymalizacji ich kosztów. Wyliczona w analizie poprawa selektów szacowana jest na od 99,74 % dla zapytania 3 do 28,59% dla zapytania 2.
+Narzędzie Database Engine Tuning Advisor zaproponowało te indeksy na podstawie analizy zapytań, statystyk ich wykonania, i kolumn, z jakich korzystają najczęściej. Według tej analizy sugerowane indeksy mogą przynieść największe korzyści dla wydajności bazy. Każdy zaproponowany indeks ma w teorii usprawnić analizowane zapytania i przyczynić się do optymalizacji ich kosztów. W tym wypadku wyliczona w analizie poprawa selektów szacowana jest na od 99,74 % dla zapytania 3 do 28,59% dla zapytania 2.
 
 
 ![img_2.png](img_2.png)
@@ -274,7 +276,7 @@ Zapytanie 4
 
 Komentarz:
 
-Po założeniu indeksów Ww wszystkich zapytanich przeszukiwanie teabel stały się  dużo mniej kosztowne (nazwa węzłą zminiła się z "table scan" na "index seek"). Zapytania wykonują się także dużo szybciej.
+Po utworzeniu indeksów, przeszukiwanie tabel w zapytaniach stało się znacznie wydajniejsze - nazwa węzła zmieniła się z "pełne przeszukiwanie tabeli" (table scan) na "poszukiwanie indeksowe" (index seek). Obserwujemy również poprawę wydajności w praktycznie wszystkich operacjach wykorzystywanych w zapytaniach: w sortowaniu, grupowaniu, wykonywaniu warunków WHERE oraz w operacjach łączenia (join). W rezultacie, zapytania są przetwarzane szybciej, co jest szczególnie zauważalne w trzech z czterech przypadków zapytań, gdzie można mówić o znaczącym skróceniu czasu wykonania.
 
 ---
 
