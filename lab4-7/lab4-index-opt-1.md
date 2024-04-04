@@ -245,9 +245,10 @@ Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
 
 ---
 
+Indeksy zostały zaptoponowane do zapytań, ponieważ przyczynią się do optymalizacji ich kosztów. Wyliczona w analizie poprawa selektów szacowana jest na od 99,74 % dla zapytania 3 do 28,59% dla zapytania 2.
+
 
 ![img_2.png](img_2.png)
-
 
 ---
 
@@ -255,7 +256,25 @@ Opisz, dlaczego dane indeksy zostały zaproponowane do zapytań:
 Sprawdź jak zmieniły się Execution Plany. Opisz zmiany:
 
 ---
+Zapytanie 1
 
+![alt text](image.png)
+
+Zapytanie 2
+
+![alt text](image-2.png)
+
+Zapytanie 3
+
+![alt text](image-3.png)
+
+Zapytanie 4
+
+![alt text](image-4.png)
+
+Komentarz:
+
+Po założeniu indeksów Ww wszystkich zapytanich przeszukiwanie teabel stały się  dużo mniej kosztowne (nazwa węzłą zminiła się z "table scan" na "index seek"). Zapytania wykonują się także dużo szybciej.
 
 ---
 
@@ -292,7 +311,7 @@ Jakie są według Ciebie najważniejsze pola?
 ![img_11.png](img_11.png)
 ![img_12.png](img_12.png)
 
-Według mnie najważniejsze pola to:
+Według nas najważniejsze pola to:
 
 **avg_fragmentation_in_percent**: Wskaźnik fragmentacji indeksu, który informuje o stopniu fragmentacji danych w indeksie. Wyższa wartość oznacza większą fragmentację, co może prowadzić do wolniejszych operacji odczytu i zapisu.
 
@@ -330,7 +349,6 @@ and avg_page_space_used_in_percent > 60)) --page density
 and page_count > 8 -- we do not want indexes less than 1 extent in size  
 and index_id not in (0) --only clustered and nonclustered indexes
 ```
-
 
 ---
 
