@@ -244,24 +244,31 @@ Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 ```sql
 -- podzapytanie
 select p.productid, p.productname, p.unitprice,
-       (select avg(unitprice) from products) as avgprice
+       (SELECT AVG(unitprice) FROM products WHERE categoryid = p.categoryid) as avg_category_price
 from products p
-where p.unitprice > (select avg(unitprice) from products);
+where p.unitprice > (select avg(unitprice) from products)
+order by p.productid;
 
 -- join
-SELECT p.productid, p.productname, p.unitprice, avgprice.avgUnitprice AS avgprice
+WITH av AS (SELECT categoryid,
+        AVG(unitprice) AS avg_category_price
+    FROM products
+    GROUP BY categoryid)
+SELECT p.productid, p.productname, p.unitprice, av.avg_category_price AS avgprice
 FROM products p
-CROSS JOIN (SELECT AVG(unitprice) AS avgUnitprice FROM products) AS avgprice
-where p.unitprice > (select avg(unitprice) from products);
+JOIN av ON av.categoryid = p.categoryid
+where p.unitprice > (select avg(unitprice) from products)
+order by p.productid;
 
 -- funkcja okna
-select productid, productname, unitprice, averageUnitprice.avgprice as avgprive
+SELECT productid, productname, unitprice, avg_category_price
 FROM (
     SELECT p.productid, p.productname, p.unitprice,
-           AVG(unitprice) OVER() AS avgprice
+           AVG(p.unitprice) OVER(PARTITION BY p.categoryid) AS avg_category_price, AVG(unitprice) OVER() AS avgprice
     FROM products p
-) AS averageUnitprice
-where unitprice > avgprice;
+) AS AverageUnitPrice
+WHERE unitprice > avgprice
+ORDER BY productid;
 ```
 
 **MS SQL Server**
@@ -444,22 +451,27 @@ Przetestuj działanie w różnych SZBD (MS SQL Server, PostgreSql, SQLite)
 
 ```sql
 -- podzapytanie
-select p.productid, p.productname, p.unitprice,
-       (select avg(unitprice) from product_history) as avgprice
+select p.id, productid, p.productname, p.unitprice,
+       (SELECT AVG(unitprice) FROM product_history WHERE categoryid = p.categoryid) as avgprice
 from product_history p
 where p.unitprice > (select avg(unitprice) from product_history);
 
 -- join
-SELECT p.productid, p.productname, p.unitprice, avgprice.avgUnitprice AS avgprice
+WITH av AS (SELECT categoryid,
+        AVG(unitprice) AS avg_category_price,
+        SUM(value) AS total_category_value
+    FROM product_history
+    GROUP BY categoryid)
+SELECT p.id, p.productid, p.productname, p.unitprice, avg_category_price AS avgprice
 FROM product_history p
-CROSS JOIN (SELECT AVG(unitprice) AS avgUnitprice FROM product_history) AS avgprice
+JOIN av ON av.categoryid = p.categoryid
 where p.unitprice > (select avg(unitprice) from product_history);
 
 -- funkcja okna
 select productid, productname, unitprice, averageUnitprice.avgprice as avgprive
 FROM (
     SELECT p.productid, p.productname, p.unitprice,
-           AVG(unitprice) OVER() AS avgprice
+           AVG(unitprice) OVER(PARTITION BY p.categoryid) AS avgprice
     FROM product_history p
 ) AS averageUnitprice
 where unitprice > avgprice;
