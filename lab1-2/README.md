@@ -274,13 +274,13 @@ ORDER BY productid;
 **MS SQL Server**
 
 podzapytanie:
-![alt text](_img/_report/image19.png)
+![alt text](image-29.png)
 join:
-![alt text](_img/_report/image20.png)
+![alt text](image-30.png)
 funkcja okna:
-![alt text](_img/_report/image21.png)
+![alt text](image-31.png)
 
-Koszty wykonania od najmniejszego: funkcja okna (0.0056), join / podzapytanie(0.0127) - porównywalne
+Koszty wykonania od najmniejszego: funkcja okna (56.61), join / podzapytanie(63.3) - porównywalne
 Plany wykonania od najmniejszego stopnia złożenia: join, podzapytanie, funkcja okna
 
 
@@ -479,14 +479,14 @@ where unitprice > avgprice;
 **MS SQL Server**
 
 podzapytanie:
-![alt text](_img/_report/image27.png)
+![alt text](image-24.png)
 join:
-![alt text](_img/_report/image28.png)
+![alt text](image-26.png)
 funkcja okna:
-![alt text](_img/_report/image29.png)
+![alt text](image-27.png)
 
 
-Koszty wykonania od najmniejszego: funkcja okna(21.01), join (63.15), podzapytanie (63.22) 
+Koszty wykonania od najmniejszego: funkcja okna(43.1639), join (63.3104), podzapytanie (63.3122) 
 Plany wykonania od najmniejszego stopnia złożenia: funkcja okna, join/podzapytanie
 
 **PostgreSQL**
