@@ -96,12 +96,10 @@ select * from customer where storeid between 594 and 610
 Zanotuj czas zapytania oraz jego koszt koszt:
 
 ---
-> Wyniki: 
+![img_5.png](img_5.png)
 
-```sql
---  ...
-```
-
+Czas wykonania zapytania 1 to 0.004s, a 100% jego kosztu to przeszukiwanie tabeli.
+Czas wykonania zapytania 2 to 0.004s, a 100% jego kosztu to przeszukiwanie tabeli.
 
 Dodaj indeks:
 
@@ -111,14 +109,15 @@ create  index customer_store_cls_idx on customer(storeid)
 
 Jak zmienił się plan i czas? Czy jest możliwość optymalizacji?
 
+![img_4.png](img_4.png)
 
----
-> Wyniki: 
+Plan wykonia zmienił się z prostego skanu tabeli (w obu przypadkach)
+na (po użyciu indeksu) wykonanie Inner Joinów, a następnie wyszukanie wszystkich nieklastrowanych indeksów oraz 
+RID Lookupa. Chodzi o to, że każdy nieklastrowany indeks zawiera ROW ID, aby móc potem szybko znaleźć pozostałą część tabeli 
+w heap table. W taki właśnie sposób RID Lookup może przeglądać heap table używając Row ID.
 
-```sql
---  ...
-```
-
+Czas wykonania zapytania 1 to 0.000s, a 50% jego kosztu to szukanie indeksu, a drugie 50% kosztu idzie na RID Lookup. 
+Czas wykonania zapytania 2 to 0.000s, a 7% jego kosztu to szukanie indeksu, a drugie 93% kosztu idzie na RID Lookup. 
 
 Dodaj indeks klastrowany:
 
@@ -128,14 +127,9 @@ create clustered index customer_store_cls_idx on customer(storeid)
 
 Czy zmienił się plan i czas? Skomentuj dwa podejścia w wyszukiwaniu krotek.
 
+![img_6.png](img_6.png)
 
----
-> Wyniki: 
-
-```sql
---  ...
-```
-
+Po sklastrowaniu indeksu nasze plan składają się tylko z jego wyszukiwania, które stanowi 100% kosztu w obu zapytaniach. Zapytania wykonuję się natychmiast, czyli w 0.000s  
 
 
 # Zadanie 2 – Indeksy zawierające dodatkowe atrybuty (dane z kolumn)
