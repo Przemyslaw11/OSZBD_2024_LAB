@@ -101,8 +101,7 @@ Zanotuj czas zapytania oraz jego koszt koszt:
 ---
 ![img_5.png](img_5.png)
 
-Czas wykonania zapytania 1 to 0.004s, a 100% jego kosztu to przeszukiwanie tabeli.
-Czas wykonania zapytania 2 to 0.004s, a 100% jego kosztu to przeszukiwanie tabeli.
+Czasy wykonania zapytań pierwszego oraz drugiego to 0.004s, a 100% ich kosztów to przeszukiwanie tabeli.
 
 Dodaj indeks:
 
@@ -115,12 +114,12 @@ Jak zmienił się plan i czas? Czy jest możliwość optymalizacji?
 ![img_4.png](img_4.png)
 
 Plan wykonia zmienił się z prostego skanu tabeli (w obu przypadkach)
-na (po użyciu indeksu) wykonanie Inner Joinów, a następnie wyszukanie wszystkich nieklastrowanych indeksów oraz 
+na wykonanie Inner Joinów, a następnie wyszukanie wszystkich nieklastrowanych indeksów oraz 
 RID Lookupa. Chodzi o to, że każdy nieklastrowany indeks zawiera ROW ID, aby móc potem szybko znaleźć pozostałą część tabeli 
 w heap table. W taki właśnie sposób RID Lookup może przeglądać heap table używając Row ID.
 
-Czas wykonania zapytania 1 to 0.000s, a 50% jego kosztu to szukanie indeksu, a drugie 50% kosztu idzie na RID Lookup. 
-Czas wykonania zapytania 2 to 0.000s, a 7% jego kosztu to szukanie indeksu, a drugie 93% kosztu idzie na RID Lookup. 
+- Czas wykonania zapytania 1 to 0.000s, a 50% jego kosztu to szukanie indeksu, a drugie 50% kosztu generuje RID Lookup. 
+- Czas wykonania zapytania 2 to 0.000s, a 7% jego kosztu to szukanie indeksu, a 93% kosztu generuje RID Lookup. 
 
 Dodaj indeks klastrowany:
 
@@ -132,8 +131,7 @@ Czy zmienił się plan i czas? Skomentuj dwa podejścia w wyszukiwaniu krotek.
 
 ![img_6.png](img_6.png)
 
-Po sklastrowaniu indeksu nasze plan składają się tylko z jego wyszukiwania, które stanowi 100% kosztu w obu zapytaniach. Zapytania wykonuję się natychmiast, czyli w 0.000s  
-
+Po sklastrowaniu indeksu nasze plan składają się tylko z jego wyszukiwania, które stanowi 100% kosztu w obu zapytaniach. Zapytania wykonuję się natychmiast, czyli w 0.000s
 
 # Zadanie 2 – Indeksy zawierające dodatkowe atrybuty (dane z kolumn)
 
@@ -246,33 +244,23 @@ order by rejectedqty desc, productid asc
 
 Która część zapytania ma największy koszt?
 
----
-> Wyniki: 
+![img_7.png](img_7.png)
 
-```sql
---  ...
-```
+Sortowanie stanowi największy, bo aż 87 procentowy koszt zapytania i pochłania największą część czasu jego wykonania. 
 
 Jaki indeks można zastosować aby zoptymalizować koszt zapytania? Przygotuj polecenie tworzące index.
 
-
----
-> Wyniki: 
-
+Zakładamy sklastrowany indeks obejmujący to na czym robimy ``order by``, czyli de facto sortowanie. 
 ```sql
---  ...
+CREATE CLUSTERED INDEX idx_rejectedqty_productid ON purchaseorderdetail (rejectedqty DESC, productid ASC);
 ```
 
  Ponownie wykonaj analizę zapytania:
 
+![img_8.png](img_8.png)
 
----
-> Wyniki: 
-
-```sql
---  ...
-```
-
+- Koszt zapytania przeniósł się prawie w całości na przeszukiwanie sklustrowanego indeksu, które jest ponad 4 razy szybsze (0.004s vs 0.018s) niż sortowanie
+- Czas wykonania zapytania zmniejszył się pięciokrotnie (z 0.020s do 0.004s)
 # Zadanie 4
 
 Celem zadania jest porównanie indeksów zawierających wszystkie kolumny oraz indeksów przechowujących dodatkowe dane (dane z kolumn).
@@ -337,13 +325,6 @@ Który jest większy? Jak można skomentować te dwa podejścia do indeksowania?
 
 Indeks `address_postalcode_2` jest nieznacznie większy niż `address_postalcode_1` (1808 KB w porównaniu do 1784 KB). To różnica w rozmiarze może wynikać z faktu, że `address_postalcode_2` jest indeksem, który zawiera wszystkie kolumny w kluczu indeksu, podczas gdy `address_postalcode_1` jest indeksem na `postalcode` przechowujących dodatkowe dane (dane z kolumn `addressline1, addressline2, city, stateprovinceid`). W tym ostatnim przypadku w strukturze drzewa indeksu te dodatkowe dane mogę znajdować się wyłącznie na liściach. Wprzypadku `address_postalcode_2` dane z dodatkowych kolumn znajdują się na każdym poziomie drzewa.
 
-
-
-```sql
---  ...
-```
-
-
 # Zadanie 5 – Indeksy z filtrami
 
 Celem zadania jest poznanie indeksów z filtrami.
@@ -380,22 +361,16 @@ Przeanalizuj plan dla poniższego zapytania:
 
 Czy indeks został użyty? Dlaczego?
 
-> Wyniki: 
-
-```sql
---  ...
-```
-
 Spróbuj wymusić indeks. Co się stało, dlaczego takie zachowanie?
 
-> Wyniki: 
+![img_10.png](img_10.png)
 
-```sql
---  ...
-```
+![img_11.png](img_11.png)
 
+Otrzymaliśmy komunikat ostrzegawczy dotyczący alokacji pamięci w związku z operacją ``INSERT``.
+Okazuje się, że indeks ``billofmaterials_cond_idx`` nie jest wystarczająco selektywny dla operacji ``INSERT``. 
 
----
+Innymi słowy, liczba wierszy spełniających warunek ``WHERE enddate IS NOT NULL`` jest wystarczająco duża (100%), aby silnik bazy danych uznał skanowanie tabeli za bardziej opłacalne niż korzystanie z tego indeksu.
 
 Punktacja:
 
