@@ -18,6 +18,8 @@
 
 **Imię i nazwisko:**
 
+Przemysław Spyra, Piotr Urbańczyk
+
 --- 
 
 Celem ćwiczenia jest zapoznanie się z planami wykonania zapytań (execution plans), oraz z budową i możliwością wykorzystaniem indeksów (cz. 2.)
@@ -95,6 +97,7 @@ select * from customer where storeid between 594 and 610
 
 Zanotuj czas zapytania oraz jego koszt koszt:
 
+
 ---
 ![img_5.png](img_5.png)
 
@@ -167,13 +170,19 @@ select * from [person] where firstname = 'Osarumwense'
 
 Co można o nich powiedzieć?
 
+![alt text](image.png)
+
+![alt text](image-1.png)
+
+**Odpowiedź**:
+
+Zapytania mają zwrócić wszystkie wiersze (`*`) tabeli `person` spełniające różną postać klauzli `WHERE` (zadeklarowanie pewnej tożsamości kolumny `lastname`, `firstname` oraz obu tych kolumn na raz).  Pierwsze zapytanie szuka wierszy z kolumną `lastname` równą `'Agbonile'`. Drugie zapytanie szuka wierszy z kolumnami `lastname` równą `'Agbonile'` i kolumną `firstname` równą `'Osarumwense'`. Trzecie zapytanie szuka wierszy z kolumną `firstname` równą `'Osarumwense'`.
+
+Klauzule są tak dobrane, że w efekcie wszystkie zapytania dają ten sam rezultat (wyświetlają jeden i ten sam wiersz). Co ciekawe mają nawet taki sam koszt wykoanania (0.1778438), choć różnią się estymowaną liczbą wierszy do na wykonanie zapytania (odpowiednio, ok. 2, 1, oraz ok. 14). Te różnice w liczbie estymowanych wierszy dla zapytania drugiego łatwo wytłumaczyć obecnością operatora `and`. Różnice dla pierwszej i trzeciej tabeli mogą być wynikiem statystyk gromadzonych przez system zarządzania bazą danych dla poszczególnych kolumn (np. większa selektywność jednej z kolumn).
+ 
+Wyygląda na to, że przeszukiwane w zapytaniach kolumny nie mają indeksu, ponieważ w planie wykonania znajduje się pełne przeszukiwanie tabeli (Table Scan), a nie przeszukiwanie indeksu (Index Seek/Scan). Zapytania są na tyle proste, że nawet bez indeksów ich koszt wykonania jest stosunkowo niski. Dodanie ich mogłoby jednak znacząco przyspieszyć podobne zapytania, zwłaszcza dla dużych zestawów danych.
 
 ---
-> Wyniki: 
-
-```sql
---  ...
-```
 
 Przygotuj indeks obejmujący te zapytania:
 
@@ -184,26 +193,39 @@ on person(lastname, firstname)
 
 Sprawdź plan zapytania. Co się zmieniło?
 
+![alt text](image-3.png)
+
+![alt text](image-4.png)
+
+**Odpowiedź:**
+
+Przeszukiwanie rekordów przy pomocy indeksu poprawiło plan wykonania zapytań a w przypadku pierwszych dwóch znacząco wpłynęło na koszty wykonania (odpowiednio 0.008022903 oraz 0.006580354). 
+
+Oprócz przeszukiwania indeksów plany zawierają także operację RID Lookup, co oznacza, że SZBD po przeszukaniu indeksu musi także odwołać się do tabli by uzyskać dane z pozostałych kolumn. Dodatkowym sposobem optymaliacji, o którym mówiliśmy na zajęciach, byłoby zapytanie o kolumny, na których założony jest indeks, a nie `SELECT *`.
+
+Trzecie zapytanie jest najbardziej kosztowne (0.1537648).
+Pojawia się przy nim sugestia utworzenia nieklasterowanego indeksu na kolumnie `firstname`. Oznacza to, że SZBD zidentyfikował, że takie działanie mogłoby dodatkowo poprawić wydajność dla zapytań wyszukujących w oparciu o tę kolumnę.
+
 
 ---
-> Wyniki: 
 
-```sql
---  ...
-```
 
 
 Przeprowadź ponownie analizę zapytań tym razem dla parametrów: `FirstName = ‘Angela’` `LastName = ‘Price’`. (Trzy zapytania, różna kombinacja parametrów). 
 
-Czym różni się ten plan od zapytania o `'Osarumwense Agbonile'` . Dlaczego tak jest?
+Czym różni się ten plan od zapytania od `'Osarumwense Agbonile'` . Dlaczego tak jest?
+
+![alt text](image-6.png)
+
+![alt text](image-5.png)
+
+**Odpowiedź:**
+
+Plany zapytania pierwszego i trzeciego ponownie zawierają operację Table Scan (zamiast Index Seek) - mimo założonego indeksu. Zapytania, które nie wykorzystały indeksowania mają, zgodnie z oczekiwaniem wysoki koszt (0.1778438), zapytanie drugie ma koszt znacząco niższy (0.006580354).
+
+Najprawdopodobniej jest to sposowdowane selektywnością tych zapytań (czyli jak wiele wierszy spełnia warunki zapytania) i pozwala to sądzić, że SZBD przewiduje inny koszt wykonania zapytań w zależności od rozkładu danych w tabeli, co może wynikać z większej powszechności imienia ‘Angela’ i nazwiska ‘Price’ w bazie danych lub z różnic w rozkładzie danych.
 
 
----
-> Wyniki: 
-
-```sql
---  ...
-```
 
 
 # Zadanie 3
@@ -285,10 +307,15 @@ Czy jest widoczna różnica w zapytaniach? Jeśli tak to jaka? Aby wymusić uży
 
 > Wyniki: 
 
-```sql
---  ...
-```
+> ![alt text](image-8.png)
 
+![alt text](image-7.png)
+
+**Odpowiedź:**
+
+Wygląda na to, że nie ma żadnej istotnej różnicy dla tego konkretnego zapytania przy wykorzystaniu `indeksu Address_PostalCode_1` i `Address_PostalCode_2`. Prawdopodobnie istnieją zapytania, w których różnice między tymi indeksami się będą pojawiać (np. zapytania nie tylko przeszukujące, ale i filtrujace po wszystkich kolumnach).
+
+---
 
 Sprawdź rozmiar Indeksów:
 
@@ -304,8 +331,13 @@ go
 
 Który jest większy? Jak można skomentować te dwa podejścia do indeksowania? Które kolumny na to wpływają?
 
-
 > Wyniki: 
+
+![alt text](image-9.png)
+
+Indeks `address_postalcode_2` jest nieznacznie większy niż `address_postalcode_1` (1808 KB w porównaniu do 1784 KB). To różnica w rozmiarze może wynikać z faktu, że `address_postalcode_2` jest indeksem, który zawiera wszystkie kolumny w kluczu indeksu, podczas gdy `address_postalcode_1` jest indeksem na `postalcode` przechowujących dodatkowe dane (dane z kolumn `addressline1, addressline2, city, stateprovinceid`). W tym ostatnim przypadku w strukturze drzewa indeksu te dodatkowe dane mogę znajdować się wyłącznie na liściach. Wprzypadku `address_postalcode_2` dane z dodatkowych kolumn znajdują się na każdym poziomie drzewa.
+
+
 
 ```sql
 --  ...
