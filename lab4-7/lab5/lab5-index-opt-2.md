@@ -53,7 +53,7 @@ Oprogramowanie dostępne jest na przygotowanej maszynie wirtualnej
 
 ## Przygotowanie  
 
-Uruchom Microsoft SQL Managment Studio.
+Uruchom Microsoft SQL Management Studio.
     
 Stwórz swoją bazę danych o nazwie XYZ. 
 
@@ -113,7 +113,7 @@ Jak zmienił się plan i czas? Czy jest możliwość optymalizacji?
 
 ![img_4.png](img_4.png)
 
-Plan wykonia zmienił się z prostego skanu tabeli (w obu przypadkach)
+Plan wykonania zmienił się z prostego skanu tabeli (w obu przypadkach)
 na wykonanie Inner Joinów, a następnie wyszukanie wszystkich nieklastrowanych indeksów oraz 
 RID Lookupa. Chodzi o to, że każdy nieklastrowany indeks zawiera ROW ID, aby móc potem szybko znaleźć pozostałą część tabeli 
 w heap table. W taki właśnie sposób RID Lookup może przeglądać heap table używając Row ID.
@@ -174,11 +174,11 @@ Co można o nich powiedzieć?
 
 **Odpowiedź**:
 
-Zapytania mają zwrócić wszystkie wiersze (`*`) tabeli `person` spełniające różną postać klauzli `WHERE` (zadeklarowanie pewnej tożsamości kolumny `lastname`, `firstname` oraz obu tych kolumn na raz).  Pierwsze zapytanie szuka wierszy z kolumną `lastname` równą `'Agbonile'`. Drugie zapytanie szuka wierszy z kolumnami `lastname` równą `'Agbonile'` i kolumną `firstname` równą `'Osarumwense'`. Trzecie zapytanie szuka wierszy z kolumną `firstname` równą `'Osarumwense'`.
+Zapytania mają zwrócić wszystkie wiersze (`*`) tabeli `person` spełniające różną postać klauzuli `WHERE` (zadeklarowanie pewnej tożsamości kolumny `lastname`, `firstname` oraz obu tych kolumn na raz).  Pierwsze zapytanie szuka wierszy z kolumną `lastname` równą `'Agbonile'`. Drugie zapytanie szuka wierszy z kolumnami `lastname` równą `'Agbonile'` i kolumną `firstname` równą `'Osarumwense'`. Trzecie zapytanie szuka wierszy z kolumną `firstname` równą `'Osarumwense'`.
 
-Klauzule są tak dobrane, że w efekcie wszystkie zapytania dają ten sam rezultat (wyświetlają jeden i ten sam wiersz). Co ciekawe mają nawet taki sam koszt wykoanania (0.1778438), choć różnią się estymowaną liczbą wierszy do na wykonanie zapytania (odpowiednio, ok. 2, 1, oraz ok. 14). Te różnice w liczbie estymowanych wierszy dla zapytania drugiego łatwo wytłumaczyć obecnością operatora `and`. Różnice dla pierwszej i trzeciej tabeli mogą być wynikiem statystyk gromadzonych przez system zarządzania bazą danych dla poszczególnych kolumn (np. większa selektywność jednej z kolumn).
+Klauzule są tak dobrane, że w efekcie wszystkie zapytania dają ten sam rezultat (wyświetlają jeden i ten sam wiersz). Co ciekawe mają nawet taki sam koszt wykonania (0.1778438), choć różnią się estymowaną liczbą wierszy do na wykonanie zapytania (odpowiednio, ok. 2, 1, oraz ok. 14). Te różnice w liczbie estymowanych wierszy dla zapytania drugiego łatwo wytłumaczyć obecnością operatora `and`. Różnice dla pierwszej i trzeciej tabeli mogą być wynikiem statystyk gromadzonych przez system zarządzania bazą danych dla poszczególnych kolumn (np. większa selektywność jednej z kolumn).
  
-Wyygląda na to, że przeszukiwane w zapytaniach kolumny nie mają indeksu, ponieważ w planie wykonania znajduje się pełne przeszukiwanie tabeli (Table Scan), a nie przeszukiwanie indeksu (Index Seek/Scan). Zapytania są na tyle proste, że nawet bez indeksów ich koszt wykonania jest stosunkowo niski. Dodanie ich mogłoby jednak znacząco przyspieszyć podobne zapytania, zwłaszcza dla dużych zestawów danych.
+Wygląda na to, że przeszukiwane w zapytaniach kolumny nie mają indeksu, ponieważ w planie wykonania znajduje się pełne przeszukiwanie tabeli (Table Scan), a nie przeszukiwanie indeksu (Index Seek/Scan). Zapytania są na tyle proste, że nawet bez indeksów ich koszt wykonania jest stosunkowo niski. Dodanie ich mogłoby jednak znacząco przyspieszyć podobne zapytania, zwłaszcza dla dużych zestawów danych.
 
 ---
 
@@ -199,10 +199,10 @@ Sprawdź plan zapytania. Co się zmieniło?
 
 Przeszukiwanie rekordów przy pomocy indeksu poprawiło plan wykonania zapytań a w przypadku pierwszych dwóch znacząco wpłynęło na koszty wykonania (odpowiednio 0.008022903 oraz 0.006580354). 
 
-Oprócz przeszukiwania indeksów plany zawierają także operację RID Lookup, co oznacza, że SZBD po przeszukaniu indeksu musi także odwołać się do tabli by uzyskać dane z pozostałych kolumn. Dodatkowym sposobem optymaliacji, o którym mówiliśmy na zajęciach, byłoby zapytanie o kolumny, na których założony jest indeks, a nie `SELECT *`.
+Oprócz przeszukiwania indeksów plany zawierają także operację RID Lookup, co oznacza, że SZBD po przeszukaniu indeksu musi także odwołać się do tabli by uzyskać dane z pozostałych kolumn. Dodatkowym sposobem optymalizacji, o którym mówiliśmy na zajęciach, byłoby zapytanie o kolumny, na których założony jest indeks, a nie `SELECT *`.
 
 Trzecie zapytanie jest najbardziej kosztowne (0.1537648).
-Pojawia się przy nim sugestia utworzenia nieklasterowanego indeksu na kolumnie `firstname`. Oznacza to, że SZBD zidentyfikował, że takie działanie mogłoby dodatkowo poprawić wydajność dla zapytań wyszukujących w oparciu o tę kolumnę.
+Pojawia się przy nim sugestia utworzenia nieklastrowanego indeksu na kolumnie `firstname`. Oznacza to, że SZBD zidentyfikował, że takie działanie mogłoby dodatkowo poprawić wydajność dla zapytań wyszukujących w oparciu o tę kolumnę.
 
 
 ---
@@ -221,7 +221,7 @@ Czym różni się ten plan od zapytania od `'Osarumwense Agbonile'` . Dlaczego t
 
 Plany zapytania pierwszego i trzeciego ponownie zawierają operację Table Scan (zamiast Index Seek) - mimo założonego indeksu. Zapytania, które nie wykorzystały indeksowania mają, zgodnie z oczekiwaniem wysoki koszt (0.1778438), zapytanie drugie ma koszt znacząco niższy (0.006580354).
 
-Najprawdopodobniej jest to sposowdowane selektywnością tych zapytań (czyli jak wiele wierszy spełnia warunki zapytania) i pozwala to sądzić, że SZBD przewiduje inny koszt wykonania zapytań w zależności od rozkładu danych w tabeli, co może wynikać z większej powszechności imienia ‘Angela’ i nazwiska ‘Price’ w bazie danych lub z różnic w rozkładzie danych.
+Najprawdopodobniej jest to spowodowane selektywnością tych zapytań (czyli jak wiele wierszy spełnia warunki zapytania) i pozwala to sądzić, że SZBD przewiduje inny koszt wykonania zapytań w zależności od rozkładu danych w tabeli, co może wynikać z większej powszechności imienia ‘Angela’ i nazwiska ‘Price’ w bazie danych lub z różnic w rozkładzie danych.
 
 
 
@@ -323,7 +323,7 @@ Który jest większy? Jak można skomentować te dwa podejścia do indeksowania?
 
 ![alt text](image-9.png)
 
-Indeks `address_postalcode_2` jest nieznacznie większy niż `address_postalcode_1` (1808 KB w porównaniu do 1784 KB). To różnica w rozmiarze może wynikać z faktu, że `address_postalcode_2` jest indeksem, który zawiera wszystkie kolumny w kluczu indeksu, podczas gdy `address_postalcode_1` jest indeksem na `postalcode` przechowujących dodatkowe dane (dane z kolumn `addressline1, addressline2, city, stateprovinceid`). W tym ostatnim przypadku w strukturze drzewa indeksu te dodatkowe dane mogę znajdować się wyłącznie na liściach. Wprzypadku `address_postalcode_2` dane z dodatkowych kolumn znajdują się na każdym poziomie drzewa.
+Indeks `address_postalcode_2` jest nieznacznie większy niż `address_postalcode_1` (1808 KB w porównaniu do 1784 KB). To różnica w rozmiarze może wynikać z faktu, że `address_postalcode_2` jest indeksem, który zawiera wszystkie kolumny w kluczu indeksu, podczas gdy `address_postalcode_1` jest indeksem na `postalcode` przechowujących dodatkowe dane (dane z kolumn `addressline1, addressline2, city, stateprovinceid`). W tym ostatnim przypadku w strukturze drzewa indeksu te dodatkowe dane mogę znajdować się wyłącznie na liściach. Wprzypadku `address_postalcode_2` dane z dodatkowych kolumn mogą znajdować się na każdym poziomie drzewa.
 
 # Zadanie 5 – Indeksy z filtrami
 
