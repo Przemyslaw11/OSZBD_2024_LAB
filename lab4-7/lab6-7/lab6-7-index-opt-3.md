@@ -120,6 +120,14 @@ Natomiast nie został użyty w zapytaniu o wiersze nie spełniające tego warunk
 
 Skoro indeks został ograniczony do tych wierszy z informacjami i produktach o productsubcategoryid >= 27 oraz <= 36, to nie będzie używany przy przeszukiwaniu innych (niespełniających warunku zadanego przy tworzeniu indeksu) wierszy w tej tabli.
 
+Ciekawostką jest fakt, że indeks nie został użyty w sposób optymalany (Index Scan a nie Index Seek). Z jakiegoś powodu stanie się tak dopiero wtedy, gdy zapytanie ograniczymy od góry nie do 36 a do 35
+
+```sql
+select name, productsubcategoryid, listprice  
+from product  
+where productsubcategoryid >= 27 and productsubcategoryid <= 35
+```
+![alt text](image-11.png)
 
 
 
@@ -254,7 +262,7 @@ Po założeniu indeksu typu ColumnStore:
 
 ![alt text](image-6.png)
 
-Największa różnica polega na koszcie przeszukania indeksu. Przed założeniem indeksu typu ColumnStore, koszt przetwarzania zapytania był zdominowany przez skan indeksu kastrowanego. Koszt skanu tego indeksu kastrowanego stanowił 99% kosztów całego zapytania (w wartościach bezwzględnych podawanych praz SSMS: 256.033). Założenie indeksu typu ColumnStore sprawiło, że koszt przeszukiwania zmalał do 18% w stosunku do całego kosztu zapytania (w wartościach bezwzględnych kilka rzędów wielkości mniej: 0.343417). Zapytanie także wykonuje się znacząco szybciej - wszystkie węzły grafu (etapy wykonania zapytania w planie), poza sortowaniem, wykonują się o rząd wielkości szybciej.
+Największa różnica polega na koszcie przeszukania indeksu. Przed założeniem indeksu typu ColumnStore, koszt przetwarzania zapytania był zdominowany przez skan indeksu klastrowanego. Koszt skanu tego indeksu klastrowanego stanowił 99% kosztów całego zapytania (w wartościach bezwzględnych podawanych praz SSMS: 256.033). Założenie indeksu typu ColumnStore sprawiło, że koszt przeszukiwania zmalał do 18% w stosunku do całego kosztu zapytania (w wartościach bezwzględnych kilka rzędów wielkości mniej: 0.343417). Zapytanie także wykonuje się znacząco szybciej - wszystkie węzły grafu (etapy wykonania zapytania w planie), poza sortowaniem, wykonują się o rząd wielkości szybciej.
 
 
 # Zadanie 4 – własne eksperymenty
@@ -281,14 +289,93 @@ Odpowiedź powinna zawierać:
 - Komentarze do zapytań, ich wyników
 - Sprawdzenie, co proponuje Database Engine Tuning Advisor (porównanie czy udało się Państwu znaleźć odpowiednie indeksy do zapytania)
 
+
 ### Eksperyment 1
+**Indeksy wykorzystujące kilka atrybutów (indeksy include)**
+
+Tworzymy tabelę "Employees" Tworzymy  z kolumnami: "EmployeeID" (klucz główny), "FirstName", "LastName", "DepartmentID" i "Salary".
+
+```sql
+CREATE TABLE Employees (
+    EmployeeID INT IDENTITY(1,1) PRIMARY KEY,
+    FirstName NVARCHAR(50),
+    LastName NVARCHAR(50),
+    DepartmentID INT,
+    Salary DECIMAL(10,2)
+);
+```
+
+Wypełniamy tabelę danymi dotyczącamymi pracowników.
+
+```sql
+DECLARE @count INT = 1;
+WHILE @count <= 10000
+BEGIN
+    INSERT INTO Employees (FirstName, LastName, DepartmentID, Salary)
+    VALUES (CONCAT('FirstName', @count), CONCAT('LastName', @count), @count % 10 + 1, ROUND((RAND() * 100000),2));
+    SET @count = @count + 1;
+END;
+```
+
+Dodajemy indeks wykorzystujący kolumny "DeparetmentID" i "Salary" jako indeks include.
+
+```sql
+CREATE NONCLUSTERED INDEX IDX_Employees_DepartmentID_Salary 
+ON Employees (DepartmentID) 
+INCLUDE (Salary);
+```
+
+Wykonujemy zapytania, które wyszukują pracowników w określonym dziale z określonym wynagrodzeniem. Porównamy wydajność z indeksem i bez indeksu.
+
+```sql
+-- Zapytanie wykorzystujące indeks
+SELECT DepartmentID, AVG(Salary) 
+FROM Employees 
+WHERE DepartmentID = 5
+GROUP BY DepartmentID;
+
+-- Zapytanie, które może nie wykorzystać indeksu optymalnie
+SELECT FirstName, LastName, Salary 
+FROM Employees 
+WHERE DepartmentID = 5 AND Salary > 50000;
+
+-- Wymuszamy uzycie indeksu
+SELECT FirstName, LastName, Salary 
+FROM Employees WITH(INDEX(IX_Employees_DepartmentID_Salary))
+WHERE DepartmentID = 5 AND Salary > 50000;
+```
+**Komentarz**:
+
+![alt text](image-4.png)
+
+W pierwszym zapytaniu do wyszukiwania danych zastosowano indeks (Index Seek). Oznacza to, że SZBD mógł bezpośrednio odnaleźć potrzebne dane w indeksie, co jest zwykle bardzo wydajne (dzieje się tak bez względu na to, czy wymusimy wykorzystanie indeksu, czy nie - prawdopodobnie i tak jest proponowany przez optymalizator kosztów).
+
+![alt text](image-7.png)
+
+W drugim zapytaniu mamy za to operację "Clustered Index Scan", co może oznaczać, że SZBD musi przeszukać cały indeks klastrowany, aby znaleźć odpowiednie rekordy (podobnie, jak w sytuacji bez indeksu przeszukuje tabele), co musi być operacją mniej wydajną. Mamy też sugestię utworzenia indeksu, który obejmowałby obie kolumny wykorzystane w zapytaniu. Tymczasem nasz indeks kolumnę Salary ma w klauzuli `INCLUDE`, a co za tym idzie, logicznie informacje o tej kolumnie znajdują się w liściach indeksu, co sprawia, że nie SZBD może przeprowadzać na niej efektywnego przeszukiwania.
+
+![alt text](image-8.png)
+
+Gdy wymusimy użycie indeksu ponownie pojawi nam się sugestia brakującego indeksu - tym razem z jeszcze większym szacowanym wpływem na zapytanie (95%). Zapytanie wykonuje się też o rząd wielkości wolniej (0,01s).
+
+Zasadniczo jest mamy węzeł Index Seek - przeszukanie indeksu, które powinno być wydajny, ale najwyraźniej SZBD nie znalazł tam wszystkich potrzebnych informacji i musiał uzupełnić przeszukanie o Key Lookup, czyli wydobyć dane z nieindeksowanych tabel (Salary). Ta operacja miała największy wpływ na koszty wykonania. A przez sposób wydobycia danych należało wykonać jeszcze dodatkowe operacje łączenia tych wyników (Nested Loops), które miały największy wpływ na czas wykonania.
+
+![alt text](image-9.png)
+
+Do zaproponowanych przez nas zapytań Database Engine Tuning Advisor proponuje utworzenie indeksu, kótry w kluczach trzymałby kolumny DepartmentID oraz Salary a zawierałby dane (include) o kolumnach FirstName, LastName.
+
+![alt text](image-10.png)
+
+Po założeniu takiego indeksu koszt i czas zapytania drugiego znacząco spadają.
+
+### Eksperyment 2
 **Nieklastrowane indeksowanie**
 
-- Schemat tabeli: Tworzymy tabelę “Products” z kolumnami: “ProductID” (klucz główny), “ProductName”, “CategoryID” i “UnitPrice”.
+- Schemat tabeli: Tworzymy tabelę "Products" z kolumnami: "ProductID" (klucz główny), "ProductName", "CategoryID" i "UnitPrice".
 
 - Opis danych: Wypełniamy tabelę danymi dotyczącymi produktów.
 
-- Opis indeksu: Dodajemy nieklastrowany indeks na kolumnie “CategoryID”.
+- Opis indeksu: Dodajemy nieklastrowany indeks na kolumnie "CategoryID".
 
 - Przygotowane zapytania: Tworzymy zapytania, które wyszukują produkty w określonej kategorii. Porównujemy wydajność z indeksem i bez indeksu.
 ```sql
@@ -334,7 +421,7 @@ SELECT * FROM Products WITH(INDEX(IX_CategoryID)) WHERE CategoryID = 4;
 Widać zatem, że zapytanie z wymuszonym indeksem działa 5 razy dłużej (0.001s vs 0.005s) przez co wypada zdecydowanie gorzej.
 
 
-Zapytanie nr. 2:
+Zapytanie nr. 3:
 
 ```sql
 -- Zapytanie bez indeksu
@@ -358,11 +445,11 @@ Zapytanie z wymuszonym indeksem działa prawie 25 razy wolniej (0.004s vs 0.0099
 ### Eksperyment 2
 **Klastrowane indeksowanie atrybutu nie będącego kluczem głównym.**
 
-- Schemat tabeli: Stworzymy tabelę o nazwie “Orders” z kolumnami: “OrderID” (klucz główny), “CustomerID”, “OrderDate” i “TotalAmount”.
+- Schemat tabeli: Stworzymy tabelę o nazwie "Orders" z kolumnami: "OrderID" (klucz główny), "CustomerID", "OrderDate" i "TotalAmount".
 
 - Opis danych: Wypełniamy tabelę fikcyjnymi zamówieniami, aby uzyskać odpowiednią liczbę rekordów.
 
-- Opis indeksu: Dodajemy klastrowany indeks na kolumnie “OrderDate”.
+- Opis indeksu: Dodajemy klastrowany indeks na kolumnie "OrderDate".
 
 - Przygotowane zapytania: Przygotowujemy zapytania, które wyszukują zamówienia na określony dzień lub w określonym przedziale dat. Porównamy wydajność z indeksem i bez indeksu
 
@@ -411,28 +498,72 @@ Pierwsze zapytanie korzysta z indeksu na kolumnie OrderDate, więc jest szybkie,
 
 Drugie zapytanie wymusza korzystanie z indeksu, ale jest nieskuteczne, ponieważ szuka po kolumnie OrderID, która jest kluczem głównym. W tym przypadku, baza danych może zignorować indeks i wykonać pełne skanowanie tabeli. Plan wykonania powinien potwierdzić, że indeks nie został użyty, co oznacza mniej wydajną operację wyszukiwania.
 
-### Eksperyment 3
-**Indeksy wykorzystujące kilka atrybutów (indeksy include)**
 
-- Schemat tabeli: Tworzymy tabelę “Employees" Tworzymy  z kolumnami: “EmployeeID” (klucz główny), “FirstName”, “LastName”, “DepartmentID” i “Salary”.
-
-- Opis danych: Wypełniamy tabelę danymi dotyczącamymi pracowników.
-
-- Opis indeksu: Dodajemy indeks wykorzystujący kolumny “DeparetmentID” i “Salary” jako indeks include.
-
-- Przygotowane zapytania: Przygotujemy zapytania, które wyszukują pracowników w określonym dziale z określonym wynagrodzeniem. Porównamy wydajność z indeksem i bez indeksu.- 
 
 
 ### Eksperyment 4
 **Filtered Index (Indeks warunkowy)**
 
-- Schemat tabeli: Tworzymy tabelę “Customers” z kolumnami: “CustomerID” (klucz główny), “CompanyName”, “Country” i “ContactName”.
+Tworzymy tabelę "Customers" z kolumnami: "CustomerID" (klucz główny), "CompanyName", "Country" i "ContactName".
 
-- Opis danych: Wypełniamy tabelę danymi dotyczącymi klientów z różnych krajów.
+```sql
+CREATE TABLE Customers (
+    CustomerID INT IDENTITY(1,1) PRIMARY KEY,
+    CompanyName NVARCHAR(255),
+    Country NVARCHAR(50),
+    ContactName NVARCHAR(255)
+);
+```
 
-- Opis indeksu: Dodajemy filtered index na kolumnie “Country” dla określonego kraju (np. “USA”).
+Wypełniamy tabelę danymi dotyczącymi klientów z różnych krajów.
 
-- Przygotowane zapytania: Przygotujemy zapytania, które wyszukują klientów z określonego kraju. Porównamy wydajność z indeksem i bez indeksu.
+```sql
+DECLARE @i INT = 1;
+WHILE @i <= 16000
+BEGIN
+    INSERT INTO Customers (CompanyName, Country, ContactName)
+    VALUES (
+        CONCAT('Company', @i),
+        CASE WHEN @i % 2 = 0 THEN 'USA' ELSE 'Poland' END,
+        CONCAT('Contact', @i)
+    );
+    SET @i = @i + 1;
+END;
+```
+
+Dodajemy filtered index na kolumnie "Country" dla określonego kraju (np. "USA").
+
+```sql
+CREATE NONCLUSTERED INDEX IX_Customers_Country_USA
+ON Customers (Country, CustomerID, CompanyName)
+INCLUDE (ContactName)
+WHERE Country = 'USA';
+```
+
+
+Przygotujemy zapytania, które wyszukują klientów z określonego kraju. Porównamy wydajność z indeksem i bez indeksu.
+
+```sql
+-- Zapytanie korzystające z indeksu filtrowanego
+SELECT * FROM Customers WHERE Country = 'USA';
+
+-- Zapytanie niekorzystające z indeksu filtrowanego
+SELECT * FROM Customers WHERE Country = 'Poland';
+```
+
+![alt text](image-12.png)
+
+![alt text](image-13.png)
+
+Indeks filtrowany jest używany, gdy zapytanie pokrywa się z jego warunkami filtrowania. Zapytanie z indeksem filtrowanym wykonuje się szybciej i jest bardziej wydajne. Natomiast, kiedy warunki filtrowania indeksu nie są spełnione, SZBD musi sięgnąć po pełne skanowanie tabeli klastrowanej, co jest bardziej kosztowne.
+
+Wygląda na to, że użycie tego typu indeksów ma sens w przypadkach, w których często odpytujemy dane z wąsko wyspecyfikowanej kategorii.
+
+![alt text](image-14.png)
+
+Database Engine Tuning Advisor rekomenduje utworzenie zwykłego (w sensie niefiltrowanego) indeksu o nieco innej konfiguracji kluczy i kolumn dołączonych.
+
+---
 
 
 |         |     |     |     |
