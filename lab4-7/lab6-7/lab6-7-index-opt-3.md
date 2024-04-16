@@ -260,14 +260,71 @@ Odpowiedź powinna zawierać:
 - Komentarze do zapytań, ich wyników
 - Sprawdzenie, co proponuje Database Engine Tuning Advisor (porównanie czy udało się Państwu znaleźć odpowiednie indeksy do zapytania)
 
+### Eksperyment 1
+**Nieklastrowane indeksowanie**
 
-> Wyniki: 
+- Schemat tabeli: Tworzymy tabelę “Products” z kolumnami: “ProductID” (klucz główny), “ProductName”, “CategoryID” i “UnitPrice”.
+
+- Opis danych: Wypełniamy tabelę danymi dotyczącymi produktów.
+
+- Opis indeksu: Dodajemy nieklastrowany indeks na kolumnie “CategoryID”.
+
+- Przygotowane zapytania: Tworzymy zapytania, które wyszukują produkty w określonej kategorii. Porównujemy wydajność z indeksem i bez indeksu.
+```sql
+CREATE TABLE Products (
+    ProductID INT PRIMARY KEY,
+    ProductName VARCHAR(255),
+    CategoryID INT,
+    UnitPrice DECIMAL(10, 2)
+);
+```
+Wypełnienie danymi
 
 ```sql
---  ...
+DECLARE @i INT = 1;
+WHILE @i <= 5000
+BEGIN
+    INSERT INTO Products (ProductID, ProductName, CategoryID, UnitPrice) 
+    VALUES 
+    (@i, 'Product ' + CAST(@i AS VARCHAR), @i % 5 + 1, @i * 10.00);
+    
+    SET @i = @i + 1;
+END;
+
 ```
+### Eksperyment 2
+**Klastrowane indeksowanie atrybutu nie będącego kluczem głównym.**
+
+- Schemat tabeli: Stworzymy tabelę o nazwie “Orders” z kolumnami: “OrderID” (klucz główny), “CustomerID”, “OrderDate” i “TotalAmount”.
+
+- Opis danych: Wypełniamy tabelę fikcyjnymi zamówieniami, aby uzyskać odpowiednią liczbę rekordów.
+
+- Opis indeksu: Dodajemy klastrowany indeks na kolumnie “OrderDate”.
+
+- Przygotowane zapytania: Przygotowujemy zapytania, które wyszukują zamówienia na określony dzień lub w określonym przedziale dat. Porównamy wydajność z indeksem i bez indeksu
+
+### Eksperyment 3
+**Indeksy wykorzystujące kilka atrybutów (indeksy include)**
+
+- Schemat tabeli: Tworzymy tabelę “Employees" Tworzymy  z kolumnami: “EmployeeID” (klucz główny), “FirstName”, “LastName”, “DepartmentID” i “Salary”.
+
+- Opis danych: Wypełniamy tabelę danymi dotyczącamymi pracowników.
+
+- Opis indeksu: Dodajemy indeks wykorzystujący kolumny “DeparetmentID” i “Salary” jako indeks include.
+
+- Przygotowane zapytania: Przygotujemy zapytania, które wyszukują pracowników w określonym dziale z określonym wynagrodzeniem. Porównamy wydajność z indeksem i bez indeksu.- 
 
 
+### Eksperyment 4
+**Filtered Index (Indeks warunkowy)**
+
+- Schemat tabeli: Tworzymy tabelę “Customers” z kolumnami: “CustomerID” (klucz główny), “CompanyName”, “Country” i “ContactName”.
+
+- Opis danych: Wypełniamy tabelę danymi dotyczącymi klientów z różnych krajów.
+
+- Opis indeksu: Dodajemy filtered index na kolumnie “Country” dla określonego kraju (np. “USA”).
+
+- Przygotowane zapytania: Przygotujemy zapytania, które wyszukują klientów z określonego kraju. Porównamy wydajność z indeksem i bez indeksu.
 
 
 |         |     |     |     |
