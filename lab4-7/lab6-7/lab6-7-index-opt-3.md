@@ -18,6 +18,8 @@
 
 **Imię i nazwisko:**
 
+Przemysław Spyra, Piotr Urbańczyk
+
 --- 
 
 Celem ćwiczenia jest zapoznanie się z planami wykonania zapytań (execution plans), oraz z budową i możliwością wykorzystaniem indeksów (cz. 2.)
@@ -106,11 +108,18 @@ Skomentuj oba zapytania. Czy indeks został użyty w którymś zapytaniu, dlacze
 
 
 ---
-> Wyniki: 
+**Wyniki**: 
 
-```sql
---  ...
-```
+Indeks z warunkiem przedziałowym został użyty w zapytaniu z tym samym warunkiem:
+
+![alt text](image-2.png)
+
+Natomiast nie został użyty w zapytaniu o wiersze nie spełniające tego warunku. Zamiast tego SZBD wykonał pełne skanowanie tabeli (Table Scan).
+
+![alt text](image.png)
+
+Skoro indeks został ograniczony do tych wierszy z informacjami i produktach o productsubcategoryid >= 27 oraz <= 36, to nie będzie używany przy przeszukiwaniu innych (niespełniających warunku zadanego przy tworzeniu indeksu) wierszy w tej tabli.
+
 
 
 
