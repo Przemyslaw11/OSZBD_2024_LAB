@@ -287,7 +287,7 @@ CREATE TABLE Products (
     UnitPrice DECIMAL(10, 2)
 );
 ```
-Wypełnienie danymi
+Wypełnieniamy tabelę Products danymi w następujący sposób: 
 
 ```sql
 DECLARE @i INT = 1;
@@ -299,8 +299,50 @@ BEGIN
     
     SET @i = @i + 1;
 END;
-
 ```
+Mamy zatem 5000 wierszy z powtarzającymi się kategorami 1-5 oraz stale rosnącą ceną.
+
+Zakładamy nieklastrowany indeks na CategoryID
+
+```sql
+CREATE NONCLUSTERED INDEX IX_CategoryID ON Products (CategoryID);
+```
+
+Tworzymy zapytanie, które wyszukuje produkty z kategori nr. 4.
+
+```sql
+-- Zapytanie bez indeksu
+SELECT * FROM Products WHERE CategoryID = 4;
+
+-- Zapytanie z indeksem
+SELECT * FROM Products WITH(INDEX(IX_CategoryID)) WHERE CategoryID = 4;
+```
+![img_4.png](img_4.png)
+
+Widać zatem, że zapytanie z wymuszonym indeksem działa 5 razy dłużej (0.001s vs 0.005s) przez co wypada zdecydowanie gorzej.
+
+
+Zapytanie nr. 2:
+
+```sql
+-- Zapytanie bez indeksu
+SELECT COUNT(CategoryID) AS TotalProducts 
+FROM Products 
+GROUP BY CategoryID 
+ORDER BY MAX(UnitPrice) DESC;
+
+-- Zapytanie z indeksem
+SELECT COUNT(CategoryID) AS TotalProducts 
+FROM Products WITH(INDEX(IX_CategoryID)) 
+GROUP BY CategoryID 
+ORDER BY MAX(UnitPrice) DESC;
+```
+W sortowaniu użyto ```ORDER BY MAX(UnitPrice) DESC```, co oznacza, że sortowanie odbywa się według maksymalnej ceny jednostkowej dla każdej kategorii w kolejności malejącej.
+
+![img_5.png](img_5.png)
+
+Zapytanie z wymuszonym indeksem działa prawie 25 razy wolniej (0.004s vs 0.0099s). Sortowanie, agregacja oraz następnie inner joiny zajmują stosunkowo najwięcej czasu
+.
 ### Eksperyment 2
 **Klastrowane indeksowanie atrybutu nie będącego kluczem głównym.**
 
@@ -311,6 +353,51 @@ END;
 - Opis indeksu: Dodajemy klastrowany indeks na kolumnie “OrderDate”.
 
 - Przygotowane zapytania: Przygotowujemy zapytania, które wyszukują zamówienia na określony dzień lub w określonym przedziale dat. Porównamy wydajność z indeksem i bez indeksu
+
+Tworzymy tabelę Orders
+
+```sql
+CREATE TABLE Orders (
+    OrderID INT PRIMARY KEY,
+    CustomerID INT,
+    OrderDate DATE,
+    TotalAmount DECIMAL(10, 2)
+);
+```
+
+Wypełniamy tabelę Orders danymi:
+
+```sql
+DECLARE @j INT = 1;
+WHILE @j <= 100000
+BEGIN
+    INSERT INTO Orders (OrderID, CustomerID, OrderDate, TotalAmount) 
+    VALUES 
+    (@j, @j % 100 + 1, DATEADD(DAY, @j % 365, '2022-01-01'), @j * 100.00);
+    
+    SET @j = @j + 1;
+END;
+```
+
+Teraz, dodajemy klastrowany indeks na kolumnie OrderDate:
+
+```sql
+CREATE CLUSTERED INDEX IX_OrderDate ON Orders (OrderDate);
+```
+
+Przygotowujemy zapytanie do porównania wydajności z indeksem i bez indeksu:
+
+```sql
+SELECT * FROM Orders WHERE OrderID = 55555;
+```
+```sql
+SELECT * FROM Orders WHERE OrderDate = '2022-07-10';
+```
+![img_6.png](img_6.png)
+
+Pierwsze zapytanie korzysta z indeksu na kolumnie OrderDate, więc jest szybkie, ponieważ wyszukuje zamówienia dla konkretnej daty. Plan wykonania pokazuję operację wyszukiwania z wykorzystaniem indeksu.
+
+Drugie zapytanie wymusza korzystanie z indeksu, ale jest nieskuteczne, ponieważ szuka po kolumnie OrderID, która jest kluczem głównym. W tym przypadku, baza danych może zignorować indeks i wykonać pełne skanowanie tabeli. Plan wykonania powinien potwierdzić, że indeks nie został użyty, co oznacza mniej wydajną operację wyszukiwania.
 
 ### Eksperyment 3
 **Indeksy wykorzystujące kilka atrybutów (indeksy include)**
