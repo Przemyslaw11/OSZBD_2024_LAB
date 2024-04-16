@@ -149,13 +149,15 @@ create clustered index order_date2_idx on salesorderheader2(orderdate)
 
 Wypisz ponownie sto pierwszych zamówień. Co się zmieniło?
 
----
-> Wyniki: 
 
-```sql
---  ...
-```
+Przed:
+![img.png](img.png)
 
+Po:
+![img_1.png](img_1.png)
+
+Czas wykonywnia się zmniejszył z 0.135s na 0.012s (ponad 11-krotnie).
+Sortowanie, które stanowiło największą część kosztu (78%) zostało zastąpione szybkim skanowaniem sklastrowanego indeksu.
 
 Sprawdź zapytanie:
 
@@ -167,14 +169,12 @@ where orderdate between '2010-10-01' and '2011-06-01'
 
 Dodaj sortowanie według OrderDate ASC i DESC. Czy indeks działa w obu przypadkach. Czy wykonywane jest dodatkowo sortowanie?
 
+### descending
+![img_2.png](img_2.png)
+### ascending
+![img_3.png](img_3.png)
 
----
-> Wyniki: 
-
-```sql
---  ...
-```
-
+Indeks działa w obu przypadkach identycznie. W obu przypadkach nie jest wykonywane żadne dodatkowe sortowanie.
 
 # Zadanie 3 – indeksy column store
 
