@@ -174,7 +174,7 @@ Dodaj sortowanie według OrderDate ASC i DESC. Czy indeks działa w obu przypadk
 ### ascending
 ![img_3.png](img_3.png)
 
-Indeks działa w obu przypadkach identycznie. W obu przypadkach nie jest wykonywane żadne dodatkowe sortowanie.
+Indeks działa w obu przypadkach. W obu przypadkach nie jest wykonywane żadne dodatkowe sortowanie.
 
 # Zadanie 3 – indeksy column store
 
@@ -239,11 +239,23 @@ Sprawdź różnicę pomiędzy przetwarzaniem w zależności od indeksów. Porów
 
 
 ---
-> Wyniki: 
 
-```sql
---  ...
-```
+**Wyniki**: 
+
+Przed założeniem indeksu typu ColumnStore:
+
+![alt text](image-1.png)
+
+![alt text](image-5.png)
+
+Po założeniu indeksu typu ColumnStore:
+
+![alt text](image-3.png)
+
+![alt text](image-6.png)
+
+Największa różnica polega na koszcie przeszukania indeksu. Przed założeniem indeksu typu ColumnStore, koszt przetwarzania zapytania był zdominowany przez skan indeksu kastrowanego. Koszt skanu tego indeksu kastrowanego stanowił 99% kosztów całego zapytania (w wartościach bezwzględnych podawanych praz SSMS: 256.033). Założenie indeksu typu ColumnStore sprawiło, że koszt przeszukiwania zmalał do 18% w stosunku do całego kosztu zapytania (w wartościach bezwzględnych kilka rzędów wielkości mniej: 0.343417). Zapytanie także wykonuje się znacząco szybciej - wszystkie węzły grafu (etapy wykonania zapytania w planie), poza sortowaniem, wykonują się o rząd wielkości szybciej.
+
 
 # Zadanie 4 – własne eksperymenty
 
