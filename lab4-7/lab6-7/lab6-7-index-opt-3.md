@@ -159,9 +159,11 @@ Wypisz ponownie sto pierwszych zamówień. Co się zmieniło?
 
 
 Przed:
+
 ![img.png](img.png)
 
 Po:
+
 ![img_1.png](img_1.png)
 
 Czas wykonywnia się zmniejszył z 0.135s na 0.012s (ponad 11-krotnie).
