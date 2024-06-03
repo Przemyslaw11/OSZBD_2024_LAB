@@ -44,11 +44,12 @@ Zwróć uwagę na formatowanie kodu
 
 <div style="page-break-after: always;"></div>
 
-_# Zadanie 1
+# Zadanie 1
 
 Zwizualizuj przykładowe dane
 
 US_STATES
+
 ![img_3.png](img_3.png)
 ```sql
 SELECT * FROM us_states
@@ -64,6 +65,7 @@ SELECT * FROM  us_interstates
 Autostrady międzystanowe są bardziej zagęszczone w regionach o dużej gęstości zaludnienia i w regionach z dużym ruchem tranzytowym. Najwięcej autostrad znajdziemy w północno-wschodnich stanach oraz w Kalifornii, natomiast najmniej w mniej zaludnionych stanach, takich jak Montana czy Wyoming.
 
 US_CITIES
+
 ![img.png](img.png)
 ```sql
 SELECT * FROM  us_cities
@@ -85,7 +87,7 @@ US_COUNTIES
 ```sql
 SELECT * FROM  us_counties
 ```
-Hrabstwa są liczniejsze w stanach o dużej powierzchni i historycznie gęsto zaludnionych obszarach, takich jak Teksas, Georgia, i Wirginia. Najmniej hrabstw znajdziemy w stanach o mniejszej powierzchni lub niskiej gęstości zaludnienia, takich jak Delaware, Rhode Island, czy Alaska.
+Hrabstwa są liczniejsze w stanach o dużej powierzchni i historycznie gęsto zaludnionych obszarach, takich jak Georgia czy Wirginia. Najmniej hrabstw znajdziemy w stanach o mniejszej powierzchni lub niskiej gęstości zaludnienia, takich jak Delaware, Rhode Island, czy Alaska.
 
 US_PARKS
 
@@ -94,7 +96,7 @@ US_PARKS
 ```sql
 SELECT * FROM  us_parks
 ```
-Parki narodowe są najliczniejsze w zachodnich stanach USA, takich jak Kalifornia, Alaska, Utah, Kolorado, i Arizona, gdzie znajduje się wiele terenów chronionych. Najmniej parków narodowych jest w stanach wschodniego wybrzeża oraz w stanach środkowo-zachodnich, z wyjątkiem kilku wyjątków.
+Parki narodowe są najliczniejsze w zachodnich stanach USA, takich jak Kalifornia, Alaska, Utah, Kolorado, i Arizona, gdzie znajduje się wiele terenów chronionych. Najmniej parków narodowych jest w stanach wschodniego wybrzeża oraz w stanach środkowo-zachodnich, poza kilkoma wyjątkami
 
 # Zadanie 2
 
@@ -189,9 +191,8 @@ WHERE id IN
 )
 ```
 
-
-
 ![img_7.png](img_7.png)
+
 ```sql
 SELECT p.name, p.geom
 FROM us_parks p
@@ -222,6 +223,7 @@ WHERE SDO_ANYINTERACT (p.geom, (SELECT geom FROM us_states WHERE state = 'Wyomin
 ![img_8.png](img_8.png)
 
 Stan Wyoming jest domem dla kilku znanych i dużych parków narodowych. Jednym z największych i najbardziej znanych parków narodowych w Wyoming jest ```Yellowstone National Park```, który jest również jednym z najstarszych parków narodowych na świecie. Innymi znanymi parkami narodowymi w Wyoming są ``Grand Teton National Park`` oraz ``Devils Tower National Monument``.
+
 # Zadanie 4
 
 Znajdź wszystkie jednostki administracyjne (us_counties) wewnątrz stanu New Hampshire
@@ -288,7 +290,7 @@ e)    Znajdz wszystkie miasta w odlegości od 15 do 30 mil od drogi 'I275'
 
 f)      Itp. (własne przykłady)
 
--- tu na dole cos srednio dziala
+
 ```sql
 --- Znajdź wszystkie jednostki administracyjne przez które przechodzi droga I4
 
@@ -322,7 +324,7 @@ WHERE SDO_WITHIN_DISTANCE(c.location, i.geom, 'distance=15 unit=mile') = 'TRUE'
 AND SDO_WITHIN_DISTANCE(c.location, i.geom, 'distance=30 unit=mile') = 'TRUE'
 AND i.interstate = 'I275';
 
---- Wlasne
+--- Wlasne przykłady
 --- Znajdź wszystkie parki narodowe w odległości 25 mil od drogi krajowej nr 1.
 
 SELECT p.*
@@ -621,7 +623,7 @@ WHERE id = 1;
 ```
 
 
-Zadanie 8
+# Zadanie 8
 
 Wykonaj kilka własnych przykładów/analiz
 
