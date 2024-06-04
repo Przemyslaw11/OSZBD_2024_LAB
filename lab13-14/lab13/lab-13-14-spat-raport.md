@@ -100,6 +100,8 @@ Parki narodowe są najliczniejsze w zachodnich stanach USA, takich jak Kaliforni
 
 # Zadanie 2
 
+**Uwaga: Parzyste zadania zostały wykonane w środowisku jupyter notebook.**
+
 Znajdź wszystkie stany (us_states) których obszary mają część wspólną ze wskazaną geometrią (prostokątem)
 
 Pokaż wynik na mapie.
@@ -117,9 +119,41 @@ FROM dual
 
 > Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+rectangle = """SELECT sdo_util.to_wktgeometry(
+    sdo_geometry (2003, 8307, null,
+    sdo_elem_info_array (1,1003,3),
+    sdo_ordinate_array ( -117.0, 40.0, -90., 44.0))
+) g FROM dual"""
+
+rectangle_result = cursor.execute(rectangle).fetchall()
+
+# Tu zaczyna się definicja nowej mapy,
+# poniżej dokładane są do niej nowe "warstwy".
+
+m = folium.Map()
+
+rectangle_result = loads(cursor.execute(rectangle).fetchall())
+
+st = {'fillColor': 'blue', 'color': 'red'}
+
+l = []
+for row in rectangle_result:
+    g = geojson.Feature(geometry=row[0], properties={})
+    l.append(g)
+
+feature_collection = geojson.FeatureCollection(l)
+folium.GeoJson(feature_collection, style_function=lambda x:st).add_to(m)  
+
+m
 ```
+
+Zrzut ekranu:
+
+![alt text](image.png)
+
+Komentarz:
+Prostkąt na mapie Stanów Zjednoczonych.
 
 
 Użyj funkcji SDO_FILTER
@@ -138,10 +172,41 @@ Zwróć uwagę na liczbę zwróconych wierszy (16)
 
 > Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+filter_query = """SELECT state, sdo_util.to_wktgeometry(geom) FROM us_states
+WHERE sdo_filter (geom,
+sdo_geometry (2003, 8307, null,
+sdo_elem_info_array (1,1003,3),
+sdo_ordinate_array ( -117.0, 40.0, -90., 44.0))
+) = 'TRUE'"""
+
+filter_result = cursor.execute(filter_query).fetchall()
+
+filter_geom = [loads(res[1]) for res in filter_result]
+
+st2 = {'fillColor': 'white', 'color': 'blue'}
+
+l2 = []
+for row in filter_geom:
+    g = geojson.Feature(geometry=row, properties={})
+    l2.append(g)
+
+feature_collection2 = geojson.FeatureCollection(l2)
+
+folium.GeoJson(feature_collection2, style_function=lambda x:st2).add_to(m)  
+
+m 
 ```
 
+Zrzut ekranu:
+
+![alt text](image-1.png)
+
+
+Komentarz: Stany (us_states), których obszary mają część wspólną ze wskazaną geometrią (prostokątem) uzyskane zapytaniem wykorzystującym
+`SDO_FILTER`.
+
+Wydaje się, jakby zapytanie wykorzystujące funkcję `SDO_FILTER` błędnie zwracało dwa stany nieprzecinające się z prostkątem. Takie działanie `SDO_FILTER` wyjaśnia dokumentacja Oracla, wg któej funkcja `SDO_FILTER` wykonuje tylko operację filtracji pierwotnej. Jest to szybka operacja, która może zwrócić niektóre fałszywe pozytywy (obiekty, które są identyfikowane jako interakcje, ale które faktycznie nie oddziałują). Aby uzyskać dokładne wyniki, można użyć operacji filtracji wtórnej, takiej jak SDO_RELATE.
 
 Użyj funkcji  SDO_ANYINTERACT
 
@@ -161,9 +226,48 @@ Pokaż wynik na mapie
 
 > Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+anyinteract_query = """SELECT state, sdo_util.to_wktgeometry(geom) FROM us_states
+WHERE sdo_anyinteract (geom,
+sdo_geometry (2003, 8307, null,
+sdo_elem_info_array (1,1003,3),
+sdo_ordinate_array ( -117.0, 40.0, -90., 44.0))
+) = 'TRUE'"""
+
+anyinteract_result = cursor.execute(anyinteract_query).fetchall()
+
+anyinteract_geom = [loads(res[1]) for res in anyinteract_result]
+
+st3 = {'fillColor': 'green', 'color': 'green'}
+
+l3 = []
+for row in anyinteract_geom:
+    g = geojson.Feature(geometry=row, properties={})
+    l3.append(g)
+
+feature_collection3 = geojson.FeatureCollection(l3)
+
+folium.GeoJson(feature_collection3, style_function=lambda x:st3).add_to(m)  
+
+m 
 ```
+
+Zrzut ekranu:
+
+![alt text](image-2.png)
+
+```python
+print(f"Liczba stanów zwróconych przez SDO_FILTER: {len(filter_result)}")
+print(f"Liczba stanów zwróconych przez SDO_ANYINTERACT: {len(anyinteract_result)}")
+```
+Liczba stanów zwróconych przez SDO_FILTER: 16\
+Liczba stanów zwróconych przez SDO_ANYINTERACT: 14
+
+Komentarz: Stany (us_states), których obszary mają część wspólną ze wskazaną geometrią (prostokątem) uzyskane zapytaniem wykorzystującym
+`SDO_ANYINTERACT` nałożone na mapę stanów, których obszary mają część wspólną ze wskazaną geometrią (prostokątem) uzyskane zapytaniem wykorzystującym `SDO_FILTER`.
+
+Wygląda na to, że zapytanie wykorzystujące funkcję `SDO_ANYINTERACT` poprawnie zwraca stany mające część wspólną z prostokątem.
+
 
 # Zadanie 3
 
@@ -251,8 +355,8 @@ W przypadku wykorzystywania narzędzia SQL Developer, w celu wizualizacji danych
 
 > Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+
 ```
 
 # Zadanie 5
