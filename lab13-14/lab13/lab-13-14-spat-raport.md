@@ -100,7 +100,7 @@ Parki narodowe są najliczniejsze w zachodnich stanach USA, takich jak Kaliforni
 
 # Zadanie 2
 
-**Uwaga: Parzyste zadania zostały wykonane w środowisku jupyter notebook.**
+**Uwaga: Parzyste zadania zostały wykonane w jupyter notebook.**
 
 Znajdź wszystkie stany (us_states) których obszary mają część wspólną ze wskazaną geometrią (prostokątem)
 
@@ -330,6 +330,8 @@ Stan Wyoming jest domem dla kilku znanych i dużych parków narodowych. Jednym z
 
 # Zadanie 4
 
+**Uwaga: Parzyste zadania zostały wykonane w jupyter notebook.**
+
 Znajdź wszystkie jednostki administracyjne (us_counties) wewnątrz stanu New Hampshire
 
 ```sql
@@ -356,8 +358,59 @@ W przypadku wykorzystywania narzędzia SQL Developer, w celu wizualizacji danych
 > Wyniki, zrzut ekranu, komentarz
 
 ```python
+query_borders = """SELECT c.county, sdo_util.to_wktgeometry(c.geom)
+FROM us_counties c, us_states s
+WHERE s.state = 'New Hampshire'
+AND SDO_RELATE ( c.geom,s.geom, 'mask=INSIDE+COVEREDBY') = 'TRUE'"""
 
+query_inside = """SELECT c.county, sdo_util.to_wktgeometry(c.geom)
+FROM us_counties c, us_states s
+WHERE s.state = 'New Hampshire'
+AND SDO_RELATE ( c.geom,s.geom, 'mask=INSIDE') = 'TRUE'"""
+
+query_coveredby = """SELECT c.county, sdo_util.to_wktgeometry(c.geom)
+FROM us_counties c, us_states s
+WHERE s.state = 'New Hampshire'
+AND SDO_RELATE ( c.geom,s.geom, 'mask=COVEREDBY') = 'TRUE'"""
+
+
+borders_result = cursor.execute(query_borders).fetchall()
+inside_result = cursor.execute(query_inside).fetchall()
+coveredby_result = cursor.execute(query_coveredby).fetchall()
+
+m = folium.Map()
+
+st_border = {'color': 'white', 'fillColor': 'transparent'}
+st_inside = {'color': 'transparent', 'fillColor': 'red'}
+st_coveredby = {'color': 'transparent', 'fillColor': 'blue'}
+
+inside_geom = [loads(res[1]) for res in inside_result]
+inside_features = [geojson.Feature(geometry=res, properties={}) for res in inside_geom]
+inside_feature_collection = geojson.FeatureCollection(inside_features)
+folium.GeoJson(inside_feature_collection, style_function=lambda x:st_inside).add_to(m)
+
+coveredby_geom = [loads(res[1]) for res in coveredby_result]
+coveredby_features = [geojson.Feature(geometry=res, properties={}) for res in coveredby_geom]
+coveredby_feature_collection = geojson.FeatureCollection(coveredby_features)
+folium.GeoJson(coveredby_feature_collection, style_function=lambda x:st_coveredby).add_to(m)
+
+borders_geom = [loads(res[1]) for res in borders_result]
+borders_features = [geojson.Feature(geometry=res, properties={}) for res in borders_geom]
+borders_feature_collection = geojson.FeatureCollection(borders_features)
+folium.GeoJson(borders_feature_collection, style_function=lambda x:st_border).add_to(m)
+
+m
 ```
+
+Zrzut ekranu:
+
+![alt text](image-3.png)
+
+Komentarz:
+Wszystkie jednostki administracyjne (us_counties) wewnątrz stanu New Hampshire.
+
+Na powższej mapie zobrazowano wszystkie trzy rodzaje zapyatń podanych w zadaniu, nadając biały kolor obramowania (granic) wszystkim jednostkom administracyjnym (`mask=INSIDE+COVEREDBY`), czerwonym kolor jednoskom wewnątz stanu (`mask=INSIDE`) i niebieski kolor jednoskom pokrytym przez obszar stanu (`mask=COVEREDBY`).
+
 
 # Zadanie 5
 
@@ -446,6 +499,8 @@ WHERE SDO_CONTAINS(s.geom, a.location) = 'TRUE' AND s.state_name = 'California';
 
 # Zadanie 6
 
+**Uwaga: Parzyste zadania zostały wykonane w jupyter notebook.**
+
 Znajdz 5 miast najbliższych drogi I4
 
 ```sql
@@ -457,7 +512,7 @@ AND sdo_nn(c.location, i.geom, 'sdo_num_res=5') = 'TRUE';
 
 >Wyniki, zrzut ekranu, komentarz
 
-```sql
+```python
 --  ...
 ```
 
@@ -480,7 +535,7 @@ f)      Itp. (własne przykłady)
 > Wyniki, zrzut ekranu, komentarz
 > (dla każdego z podpunktów)
 
-```sql
+```python
 --  ...
 ```
 
