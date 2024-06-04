@@ -1013,11 +1013,94 @@ WHERE id = 1;
 Wykonaj kilka własnych przykładów/analiz
 
 
+
+Przykład 1
+
 >Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+query_largest_parks = """
+SELECT p.name, SDO_GEOM.SDO_AREA(p.geom, 0.005, 'unit=SQ_KM') as area, sdo_util.to_wktgeometry(p.geom)
+FROM us_parks p
+ORDER BY area DESC
+FETCH FIRST 5 ROWS ONLY
+"""
+
+# Wyświetlanie na mapie analogicznie, jak przykładach w parzystych zadaniach powyżej
 ```
+
+Zrut ekranu:
+
+![alt text](image-14.png)
+
+
+Komentarz:
+W przykładzie podajemy zapytanie, które zwraca i umożliwia wyświetlenie na mapie 5 największych parków narodowych (z tabeli `us_parks`) w Stanach Zjednoczonych. Poniżej lista ich nazw wraz polem powierzni w km^2:\
+Wrangell-St. Elias NP and NPRE 53370.0142890794\
+Gates of the Arctic NP & NPRES 34280.9722577574\
+Noatak NPRES 26582.3201923589\
+Denali NP and NPRES 24398.5944663352\
+Katmai NP and NPRES 16561.6337361726
+
+Przykład 2
+
+>Wyniki, zrzut ekranu, komentarz
+
+```python
+query_longest_river_in_texas = """
+SELECT r.name, SDO_GEOM.SDO_LENGTH(r.geom, 0.005, 'unit=KM') as length, sdo_util.to_wktgeometry(r.geom)
+FROM us_rivers r, us_states s
+WHERE s.state = 'Texas' AND SDO_ANYINTERACT(r.geom, s.geom) = 'TRUE'
+ORDER BY length DESC
+FETCH FIRST ROW ONLY
+"""
+
+# Wyświetlanie na mapie analogicznie, jak przykładach w parzystych zadaniach powyżej
+```
+
+Zrut ekranu:
+
+![alt text](image-15.png)
+
+Komentarz:
+W przykładzie podajemy zapytanie, które zwraca i umożliwia wyświetlenie na najdłuższą rzekę przepływającą przez stan Texas (Rio Grande, 2397.13 km).
+
+
+Przykład 3
+
+>Wyniki, zrzut ekranu, komentarz
+
+```python
+query_nearest_parks_to_la = """
+SELECT p.name, SDO_GEOM.SDO_DISTANCE(p.geom, c.location, 0.005, 'unit=KM') as distance, sdo_util.to_wktgeometry(p.geom)
+FROM us_parks p, us_cities c
+WHERE c.city = 'Los Angeles'
+ORDER BY distance
+FETCH FIRST 5 ROWS ONLY
+"""
+
+# Wyświetlanie na mapie analogicznie, jak przykładach w parzystych zadaniach powyżej
+```
+
+Zrut ekranu:
+
+![alt text](image-16.png)
+
+Komentarz:
+W przykładzie podajemy zapytanie, które zwraca i umożliwia wyświetlenie na mapie 5 parków narodowych najbliższych Los Angeles (Santa Monica, Mountains NRA,
+Angeles NF,
+Los Padres NF,
+Kenney Grove Park,
+Toland Park), niewykorzystujące funkcji `SDO_NN`.
+
+
+
+
+
+
+
+
+
 
 Punktacja
 
