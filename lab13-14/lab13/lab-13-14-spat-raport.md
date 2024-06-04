@@ -513,8 +513,36 @@ AND sdo_nn(c.location, i.geom, 'sdo_num_res=5') = 'TRUE';
 >Wyniki, zrzut ekranu, komentarz
 
 ```python
---  ...
+query_i4_cities = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_interstates i, us_cities c 
+WHERE i.interstate = 'I4'
+AND sdo_nn(c.location, i.geom, 'sdo_num_res=5') = 'TRUE'"""
+
+query = cursor.execute(query_i4_cities).fetchall()
+
+m = folium.Map()
+
+st = {'color': 'blue', 'fillColor': 'blue'}
+
+for result in [query]:
+    geom = [loads(res[2]) for res in result]
+    features = [geojson.Feature(geometry=res, properties={}) for res in geom]
+    feature_collection = geojson.FeatureCollection(features)
+    folium.GeoJson(feature_collection, style_function=lambda x:st).add_to(m)
+
+m
 ```
+
+Zrzut ekranu:
+
+![alt text](image-4.png)
+
+Komentarz: Zrzut ekranu przedstawia 5 miast nabliższych drogi I4 (Tampa,
+Jacksonville,
+St Petersburg,
+Orlando, oraz
+Fort Lauderdale). W zapytaniu użyto funkcji `SDO_NN`, zwracającej najbliższych sąsiadów danego kształtu.
+
 
 
 Dodatkowo:
@@ -527,7 +555,7 @@ c)     Znajdz kilka jednostek administracyjnych (us_counties) z których jes
 
 d)    Znajdz 5 najbliższych miast od drogi  'I170', podaj odległość do tych miast
 
-e)    Znajdz 5 najbliższych dużych miast (o populacji powyżej 300 tys) od drogi  'I170'
+e)    Znajdz 5 najbliższych dużych miast (o populacji powyżej 300 tys) od drogi 'I170'
 
 f)      Itp. (własne przykłady)
 
@@ -535,9 +563,204 @@ f)      Itp. (własne przykłady)
 > Wyniki, zrzut ekranu, komentarz
 > (dla każdego z podpunktów)
 
+a)
 ```python
---  ...
+query_mississippi_cities = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_rivers r, us_cities c 
+WHERE r.name = 'Mississippi'
+AND sdo_nn(c.location, r.geom, 'sdo_num_res=7') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
 ```
+Zrzut ekranu:
+
+![alt text](image-5.png)
+
+Komentarz: Zrzut ekranu przedstawia 7 miast najbliższych rzece Mississippi.
+(St Paul,
+Memphis,
+New Orleans,
+St Louis,
+Minneapolis,
+Baton Rouge,
+Jackson).
+W zapytaniu użyto funkcji `SDO_NN`, zwracającej najbliższych sąsiadów danego kształtu.
+
+
+b)
+```python
+query_new_york_cities = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_cities c 
+WHERE c.city != 'New York'
+AND sdo_nn(c.location, (SELECT location FROM us_cities WHERE city = 'New York'), 'sdo_num_res=4') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-6.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 3 miasta najbliżej Nowego Jorku.
+(Elizabeth,
+Newark,
+Jersey City).
+W zapytaniu użyto funkcji `SDO_NN`, zwracającej najbliższych sąsiadów danego kształtu. Ponieważ wygląda na to, że `SDO_NN` jest zwrotna, żeby uzyskać trzy miasta najbliżej Nowego Jorku, należało zwiększyć `sdo_num_res` do 4 i wykluczyć `New York` z poszukiwań (Nowy Jork sam jest miastem najbliżej Nowego Jorku). Lokacja Nowego Jorku brana jest podzapytaniem.
+
+c)
+```python
+query_new_york_counties = """
+SELECT co.county, co.state_abrv, sdo_util.to_wktgeometry(co.geom)
+FROM us_counties co 
+WHERE sdo_nn(co.geom, (SELECT location FROM us_cities WHERE city = 'New York'), 'sdo_num_res=5') = 'TRUE'
+"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-7.png)
+
+
+Komentarz:
+Zrzut ekranu przedstawia kilka jednostek administracyjnych (us_counties) z których jest najbliżej do Nowego Jorku.
+(Hudson,
+Queens,
+Richmond,
+Kings,
+New York).
+W zapytaniu użyto funkcji `SDO_NN`, zwracającej najbliższych sąsiadów danego kształtu. Siłą rzeczy zapytania zwraca jedn. admin, które leżą na terenie miasta Nowy Jork (Queens,
+New York). Usunięcie ich dodaniem funkcji `SDO_INSIDE` czy `SDO_RELATE` (chyba) jest niemożliwe, ponieważ baza zdaje się nie przechowywać danych o kształcie powierzchni miast (prznajmniej nie w tabeli `us_cities`). Zawsze można wyliczyć te jednostki i dodać coś w stylu: `AND co.county NOT IN ('Queens', 'New York')`.
+
+
+
+d)
+```python
+query_i170_cities = """
+SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location), 
+       sdo_geom.sdo_distance(c.location, i.geom, 0.005, 'unit=KM') as distance
+FROM us_interstates i, us_cities c 
+WHERE i.interstate = 'I170'
+AND sdo_nn(c.location, i.geom, 'sdo_num_res=5') = 'TRUE'
+ORDER BY distance
+"""
+
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-8.png)
+
+
+Komentarz:
+Zrzut ekranu przedstawia 5 najbliższych miast od drogi  'I170'. Poniżej wymieniem je razem z odległością w kilometrach.\
+St Louis 8.63086834124045\
+Springfield 126.815899024404\
+Peoria 227.686805598134\
+Evansville 254.637198689794\
+Springfield 303.375234373403
+
+
+
+e)
+```python
+query_i170_large_cities = """
+SELECT * FROM (
+  SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location), 
+         sdo_geom.sdo_distance(c.location, i.geom, 0.005, 'unit=KM') as distance
+  FROM us_interstates i, us_cities c 
+  WHERE i.interstate = 'I170' AND c.pop90 > 300000
+  ORDER BY distance
+)
+WHERE ROWNUM <= 5
+"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-9.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 5 najbliższych dużych miast (o populacji powyżej 300 tys) od drogi 'I170'
+(St Louis,
+Kansas City,
+Indianapolis,
+Memphis,
+Chicago).
+W tym zapytaniu zapytaniu po raz pierwszy nie użyto funkcji `SDO_NN`. Takie podejście zwracało najbliższych sąsiadó i dopiero potem nakładało warunek, w efekcie czego trudno było dobierać `sdo_num_res` tak, by uzyskąc ostatecznie pięć miast. Zamiast tego zaproponowano zapytanie zwracahające 5 pierwszych wyników zapytania zwracającego miasta > 300000 mieszkańców uszeregowane wg odległości względem drogi 'I170'.
+
+
+f) Własny przykład 1
+```python
+query_i95 = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_interstates i, us_cities c 
+WHERE i.interstate = 'I95'
+AND sdo_nn(c.location, i.geom, 'sdo_num_res=5') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-10.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 5 miast najbliższych drodze I95.
+
+
+g) Własny przykład 2
+```python
+query_colorado = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_rivers r, us_cities c 
+WHERE r.name = 'Colorado'
+AND sdo_nn(c.location, r.geom, 'sdo_num_res=5') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-11.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 5 miast najbliższych rzece Colorado.
+
+
+h) Własny przykład 3
+```python
+query_los_angeles = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_cities c 
+WHERE c.city != 'Los Angeles'
+AND sdo_nn(c.location, (SELECT location FROM us_cities WHERE city = 'Los Angeles'), 'sdo_num_res=4') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-12.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 3 miasta najbliżej Los Angeles
+
+
+i) Własny przykład 4
+```python
+query_los_angeles_counties = """SELECT co.county, co.state_abrv, sdo_util.to_wktgeometry(co.geom)
+FROM us_counties co 
+WHERE sdo_nn(co.geom, (SELECT location FROM us_cities WHERE city = 'Los Angeles'), 'sdo_num_res=6') = 'TRUE'
+AND co.county != 'Los Angeles'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-13.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 5 jedn. adm. najbliżej Los Angeles. Z zapytania wyłączono jednostkę administracyjną znajdującą się na terenie miasta.
+
+
+
 
 
 # Zadanie 7
@@ -783,6 +1006,9 @@ WHERE id = 1;
 
 
 # Zadanie 8
+
+**Uwaga: Parzyste zadania zostały wykonane w jupyter notebook.**
+
 
 Wykonaj kilka własnych przykładów/analiz
 
