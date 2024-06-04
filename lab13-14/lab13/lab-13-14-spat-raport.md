@@ -100,6 +100,8 @@ Parki narodowe są najliczniejsze w zachodnich stanach USA, takich jak Kaliforni
 
 # Zadanie 2
 
+**Uwaga: Parzyste zadania zostały wykonane w jupyter notebook.**
+
 Znajdź wszystkie stany (us_states) których obszary mają część wspólną ze wskazaną geometrią (prostokątem)
 
 Pokaż wynik na mapie.
@@ -117,9 +119,41 @@ FROM dual
 
 > Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+rectangle = """SELECT sdo_util.to_wktgeometry(
+    sdo_geometry (2003, 8307, null,
+    sdo_elem_info_array (1,1003,3),
+    sdo_ordinate_array ( -117.0, 40.0, -90., 44.0))
+) g FROM dual"""
+
+rectangle_result = cursor.execute(rectangle).fetchall()
+
+# Tu zaczyna się definicja nowej mapy,
+# poniżej dokładane są do niej nowe "warstwy".
+
+m = folium.Map()
+
+rectangle_result = loads(cursor.execute(rectangle).fetchall())
+
+st = {'fillColor': 'blue', 'color': 'red'}
+
+l = []
+for row in rectangle_result:
+    g = geojson.Feature(geometry=row[0], properties={})
+    l.append(g)
+
+feature_collection = geojson.FeatureCollection(l)
+folium.GeoJson(feature_collection, style_function=lambda x:st).add_to(m)  
+
+m
 ```
+
+Zrzut ekranu:
+
+![alt text](image.png)
+
+Komentarz:
+Prostkąt na mapie Stanów Zjednoczonych.
 
 
 Użyj funkcji SDO_FILTER
@@ -138,10 +172,41 @@ Zwróć uwagę na liczbę zwróconych wierszy (16)
 
 > Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+filter_query = """SELECT state, sdo_util.to_wktgeometry(geom) FROM us_states
+WHERE sdo_filter (geom,
+sdo_geometry (2003, 8307, null,
+sdo_elem_info_array (1,1003,3),
+sdo_ordinate_array ( -117.0, 40.0, -90., 44.0))
+) = 'TRUE'"""
+
+filter_result = cursor.execute(filter_query).fetchall()
+
+filter_geom = [loads(res[1]) for res in filter_result]
+
+st2 = {'fillColor': 'white', 'color': 'blue'}
+
+l2 = []
+for row in filter_geom:
+    g = geojson.Feature(geometry=row, properties={})
+    l2.append(g)
+
+feature_collection2 = geojson.FeatureCollection(l2)
+
+folium.GeoJson(feature_collection2, style_function=lambda x:st2).add_to(m)  
+
+m 
 ```
 
+Zrzut ekranu:
+
+![alt text](image-1.png)
+
+
+Komentarz: Stany (us_states), których obszary mają część wspólną ze wskazaną geometrią (prostokątem) uzyskane zapytaniem wykorzystującym
+`SDO_FILTER`.
+
+Wydaje się, jakby zapytanie wykorzystujące funkcję `SDO_FILTER` błędnie zwracało dwa stany nieprzecinające się z prostkątem. Takie działanie `SDO_FILTER` wyjaśnia dokumentacja Oracla, wg któej funkcja `SDO_FILTER` wykonuje tylko operację filtracji pierwotnej. Jest to szybka operacja, która może zwrócić niektóre fałszywe pozytywy (obiekty, które są identyfikowane jako interakcje, ale które faktycznie nie oddziałują). Aby uzyskać dokładne wyniki, można użyć operacji filtracji wtórnej, takiej jak SDO_RELATE.
 
 Użyj funkcji  SDO_ANYINTERACT
 
@@ -161,9 +226,48 @@ Pokaż wynik na mapie
 
 > Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+anyinteract_query = """SELECT state, sdo_util.to_wktgeometry(geom) FROM us_states
+WHERE sdo_anyinteract (geom,
+sdo_geometry (2003, 8307, null,
+sdo_elem_info_array (1,1003,3),
+sdo_ordinate_array ( -117.0, 40.0, -90., 44.0))
+) = 'TRUE'"""
+
+anyinteract_result = cursor.execute(anyinteract_query).fetchall()
+
+anyinteract_geom = [loads(res[1]) for res in anyinteract_result]
+
+st3 = {'fillColor': 'green', 'color': 'green'}
+
+l3 = []
+for row in anyinteract_geom:
+    g = geojson.Feature(geometry=row, properties={})
+    l3.append(g)
+
+feature_collection3 = geojson.FeatureCollection(l3)
+
+folium.GeoJson(feature_collection3, style_function=lambda x:st3).add_to(m)  
+
+m 
 ```
+
+Zrzut ekranu:
+
+![alt text](image-2.png)
+
+```python
+print(f"Liczba stanów zwróconych przez SDO_FILTER: {len(filter_result)}")
+print(f"Liczba stanów zwróconych przez SDO_ANYINTERACT: {len(anyinteract_result)}")
+```
+Liczba stanów zwróconych przez SDO_FILTER: 16\
+Liczba stanów zwróconych przez SDO_ANYINTERACT: 14
+
+Komentarz: Stany (us_states), których obszary mają część wspólną ze wskazaną geometrią (prostokątem) uzyskane zapytaniem wykorzystującym
+`SDO_ANYINTERACT` nałożone na mapę stanów, których obszary mają część wspólną ze wskazaną geometrią (prostokątem) uzyskane zapytaniem wykorzystującym `SDO_FILTER`.
+
+Wygląda na to, że zapytanie wykorzystujące funkcję `SDO_ANYINTERACT` poprawnie zwraca stany mające część wspólną z prostokątem.
+
 
 # Zadanie 3
 
@@ -226,6 +330,8 @@ Stan Wyoming jest domem dla kilku znanych i dużych parków narodowych. Jednym z
 
 # Zadanie 4
 
+**Uwaga: Parzyste zadania zostały wykonane w jupyter notebook.**
+
 Znajdź wszystkie jednostki administracyjne (us_counties) wewnątrz stanu New Hampshire
 
 ```sql
@@ -251,9 +357,60 @@ W przypadku wykorzystywania narzędzia SQL Developer, w celu wizualizacji danych
 
 > Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+query_borders = """SELECT c.county, sdo_util.to_wktgeometry(c.geom)
+FROM us_counties c, us_states s
+WHERE s.state = 'New Hampshire'
+AND SDO_RELATE ( c.geom,s.geom, 'mask=INSIDE+COVEREDBY') = 'TRUE'"""
+
+query_inside = """SELECT c.county, sdo_util.to_wktgeometry(c.geom)
+FROM us_counties c, us_states s
+WHERE s.state = 'New Hampshire'
+AND SDO_RELATE ( c.geom,s.geom, 'mask=INSIDE') = 'TRUE'"""
+
+query_coveredby = """SELECT c.county, sdo_util.to_wktgeometry(c.geom)
+FROM us_counties c, us_states s
+WHERE s.state = 'New Hampshire'
+AND SDO_RELATE ( c.geom,s.geom, 'mask=COVEREDBY') = 'TRUE'"""
+
+
+borders_result = cursor.execute(query_borders).fetchall()
+inside_result = cursor.execute(query_inside).fetchall()
+coveredby_result = cursor.execute(query_coveredby).fetchall()
+
+m = folium.Map()
+
+st_border = {'color': 'white', 'fillColor': 'transparent'}
+st_inside = {'color': 'transparent', 'fillColor': 'red'}
+st_coveredby = {'color': 'transparent', 'fillColor': 'blue'}
+
+inside_geom = [loads(res[1]) for res in inside_result]
+inside_features = [geojson.Feature(geometry=res, properties={}) for res in inside_geom]
+inside_feature_collection = geojson.FeatureCollection(inside_features)
+folium.GeoJson(inside_feature_collection, style_function=lambda x:st_inside).add_to(m)
+
+coveredby_geom = [loads(res[1]) for res in coveredby_result]
+coveredby_features = [geojson.Feature(geometry=res, properties={}) for res in coveredby_geom]
+coveredby_feature_collection = geojson.FeatureCollection(coveredby_features)
+folium.GeoJson(coveredby_feature_collection, style_function=lambda x:st_coveredby).add_to(m)
+
+borders_geom = [loads(res[1]) for res in borders_result]
+borders_features = [geojson.Feature(geometry=res, properties={}) for res in borders_geom]
+borders_feature_collection = geojson.FeatureCollection(borders_features)
+folium.GeoJson(borders_feature_collection, style_function=lambda x:st_border).add_to(m)
+
+m
 ```
+
+Zrzut ekranu:
+
+![alt text](image-3.png)
+
+Komentarz:
+Wszystkie jednostki administracyjne (us_counties) wewnątrz stanu New Hampshire.
+
+Na powższej mapie zobrazowano wszystkie trzy rodzaje zapyatń podanych w zadaniu, nadając biały kolor obramowania (granic) wszystkim jednostkom administracyjnym (`mask=INSIDE+COVEREDBY`), czerwonym kolor jednoskom wewnątz stanu (`mask=INSIDE`) i niebieski kolor jednoskom pokrytym przez obszar stanu (`mask=COVEREDBY`).
+
 
 # Zadanie 5
 
@@ -342,6 +499,8 @@ WHERE SDO_CONTAINS(s.geom, a.location) = 'TRUE' AND s.state_name = 'California';
 
 # Zadanie 6
 
+**Uwaga: Parzyste zadania zostały wykonane w jupyter notebook.**
+
 Znajdz 5 miast najbliższych drogi I4
 
 ```sql
@@ -353,9 +512,37 @@ AND sdo_nn(c.location, i.geom, 'sdo_num_res=5') = 'TRUE';
 
 >Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+query_i4_cities = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_interstates i, us_cities c 
+WHERE i.interstate = 'I4'
+AND sdo_nn(c.location, i.geom, 'sdo_num_res=5') = 'TRUE'"""
+
+query = cursor.execute(query_i4_cities).fetchall()
+
+m = folium.Map()
+
+st = {'color': 'blue', 'fillColor': 'blue'}
+
+for result in [query]:
+    geom = [loads(res[2]) for res in result]
+    features = [geojson.Feature(geometry=res, properties={}) for res in geom]
+    feature_collection = geojson.FeatureCollection(features)
+    folium.GeoJson(feature_collection, style_function=lambda x:st).add_to(m)
+
+m
 ```
+
+Zrzut ekranu:
+
+![alt text](image-4.png)
+
+Komentarz: Zrzut ekranu przedstawia 5 miast nabliższych drogi I4 (Tampa,
+Jacksonville,
+St Petersburg,
+Orlando, oraz
+Fort Lauderdale). W zapytaniu użyto funkcji `SDO_NN`, zwracającej najbliższych sąsiadów danego kształtu.
+
 
 
 Dodatkowo:
@@ -368,7 +555,7 @@ c)     Znajdz kilka jednostek administracyjnych (us_counties) z których jes
 
 d)    Znajdz 5 najbliższych miast od drogi  'I170', podaj odległość do tych miast
 
-e)    Znajdz 5 najbliższych dużych miast (o populacji powyżej 300 tys) od drogi  'I170'
+e)    Znajdz 5 najbliższych dużych miast (o populacji powyżej 300 tys) od drogi 'I170'
 
 f)      Itp. (własne przykłady)
 
@@ -376,9 +563,204 @@ f)      Itp. (własne przykłady)
 > Wyniki, zrzut ekranu, komentarz
 > (dla każdego z podpunktów)
 
-```sql
---  ...
+a)
+```python
+query_mississippi_cities = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_rivers r, us_cities c 
+WHERE r.name = 'Mississippi'
+AND sdo_nn(c.location, r.geom, 'sdo_num_res=7') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
 ```
+Zrzut ekranu:
+
+![alt text](image-5.png)
+
+Komentarz: Zrzut ekranu przedstawia 7 miast najbliższych rzece Mississippi.
+(St Paul,
+Memphis,
+New Orleans,
+St Louis,
+Minneapolis,
+Baton Rouge,
+Jackson).
+W zapytaniu użyto funkcji `SDO_NN`, zwracającej najbliższych sąsiadów danego kształtu.
+
+
+b)
+```python
+query_new_york_cities = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_cities c 
+WHERE c.city != 'New York'
+AND sdo_nn(c.location, (SELECT location FROM us_cities WHERE city = 'New York'), 'sdo_num_res=4') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-6.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 3 miasta najbliżej Nowego Jorku.
+(Elizabeth,
+Newark,
+Jersey City).
+W zapytaniu użyto funkcji `SDO_NN`, zwracającej najbliższych sąsiadów danego kształtu. Ponieważ wygląda na to, że `SDO_NN` jest zwrotna, żeby uzyskać trzy miasta najbliżej Nowego Jorku, należało zwiększyć `sdo_num_res` do 4 i wykluczyć `New York` z poszukiwań (Nowy Jork sam jest miastem najbliżej Nowego Jorku). Lokacja Nowego Jorku brana jest podzapytaniem.
+
+c)
+```python
+query_new_york_counties = """
+SELECT co.county, co.state_abrv, sdo_util.to_wktgeometry(co.geom)
+FROM us_counties co 
+WHERE sdo_nn(co.geom, (SELECT location FROM us_cities WHERE city = 'New York'), 'sdo_num_res=5') = 'TRUE'
+"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-7.png)
+
+
+Komentarz:
+Zrzut ekranu przedstawia kilka jednostek administracyjnych (us_counties) z których jest najbliżej do Nowego Jorku.
+(Hudson,
+Queens,
+Richmond,
+Kings,
+New York).
+W zapytaniu użyto funkcji `SDO_NN`, zwracającej najbliższych sąsiadów danego kształtu. Siłą rzeczy zapytania zwraca jedn. admin, które leżą na terenie miasta Nowy Jork (Queens,
+New York). Usunięcie ich dodaniem funkcji `SDO_INSIDE` czy `SDO_RELATE` (chyba) jest niemożliwe, ponieważ baza zdaje się nie przechowywać danych o kształcie powierzchni miast (prznajmniej nie w tabeli `us_cities`). Zawsze można wyliczyć te jednostki i dodać coś w stylu: `AND co.county NOT IN ('Queens', 'New York')`.
+
+
+
+d)
+```python
+query_i170_cities = """
+SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location), 
+       sdo_geom.sdo_distance(c.location, i.geom, 0.005, 'unit=KM') as distance
+FROM us_interstates i, us_cities c 
+WHERE i.interstate = 'I170'
+AND sdo_nn(c.location, i.geom, 'sdo_num_res=5') = 'TRUE'
+ORDER BY distance
+"""
+
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-8.png)
+
+
+Komentarz:
+Zrzut ekranu przedstawia 5 najbliższych miast od drogi  'I170'. Poniżej wymieniem je razem z odległością w kilometrach.\
+St Louis 8.63086834124045\
+Springfield 126.815899024404\
+Peoria 227.686805598134\
+Evansville 254.637198689794\
+Springfield 303.375234373403
+
+
+
+e)
+```python
+query_i170_large_cities = """
+SELECT * FROM (
+  SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location), 
+         sdo_geom.sdo_distance(c.location, i.geom, 0.005, 'unit=KM') as distance
+  FROM us_interstates i, us_cities c 
+  WHERE i.interstate = 'I170' AND c.pop90 > 300000
+  ORDER BY distance
+)
+WHERE ROWNUM <= 5
+"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-9.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 5 najbliższych dużych miast (o populacji powyżej 300 tys) od drogi 'I170'
+(St Louis,
+Kansas City,
+Indianapolis,
+Memphis,
+Chicago).
+W tym zapytaniu zapytaniu po raz pierwszy nie użyto funkcji `SDO_NN`. Takie podejście zwracało najbliższych sąsiadó i dopiero potem nakładało warunek, w efekcie czego trudno było dobierać `sdo_num_res` tak, by uzyskąc ostatecznie pięć miast. Zamiast tego zaproponowano zapytanie zwracahające 5 pierwszych wyników zapytania zwracającego miasta > 300000 mieszkańców uszeregowane wg odległości względem drogi 'I170'.
+
+
+f) Własny przykład 1
+```python
+query_i95 = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_interstates i, us_cities c 
+WHERE i.interstate = 'I95'
+AND sdo_nn(c.location, i.geom, 'sdo_num_res=5') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-10.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 5 miast najbliższych drodze I95.
+
+
+g) Własny przykład 2
+```python
+query_colorado = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_rivers r, us_cities c 
+WHERE r.name = 'Colorado'
+AND sdo_nn(c.location, r.geom, 'sdo_num_res=5') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-11.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 5 miast najbliższych rzece Colorado.
+
+
+h) Własny przykład 3
+```python
+query_los_angeles = """SELECT c.city, c.state_abrv, sdo_util.to_wktgeometry(c.location)
+FROM us_cities c 
+WHERE c.city != 'Los Angeles'
+AND sdo_nn(c.location, (SELECT location FROM us_cities WHERE city = 'Los Angeles'), 'sdo_num_res=4') = 'TRUE'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-12.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 3 miasta najbliżej Los Angeles
+
+
+i) Własny przykład 4
+```python
+query_los_angeles_counties = """SELECT co.county, co.state_abrv, sdo_util.to_wktgeometry(co.geom)
+FROM us_counties co 
+WHERE sdo_nn(co.geom, (SELECT location FROM us_cities WHERE city = 'Los Angeles'), 'sdo_num_res=6') = 'TRUE'
+AND co.county != 'Los Angeles'"""
+
+# Wyświetlanie na mapie analogicznie, jak we wzorcowym przykładzie powyżej
+```
+Zrzut ekranu:
+
+![alt text](image-13.png)
+
+Komentarz:
+Zrzut ekranu przedstawia 5 jedn. adm. najbliżej Los Angeles. Z zapytania wyłączono jednostkę administracyjną znajdującą się na terenie miasta.
+
+
+
 
 
 # Zadanie 7
@@ -625,14 +1007,100 @@ WHERE id = 1;
 
 # Zadanie 8
 
+**Uwaga: Parzyste zadania zostały wykonane w jupyter notebook.**
+
+
 Wykonaj kilka własnych przykładów/analiz
 
 
+
+Przykład 1
+
 >Wyniki, zrzut ekranu, komentarz
 
-```sql
---  ...
+```python
+query_largest_parks = """
+SELECT p.name, SDO_GEOM.SDO_AREA(p.geom, 0.005, 'unit=SQ_KM') as area, sdo_util.to_wktgeometry(p.geom)
+FROM us_parks p
+ORDER BY area DESC
+FETCH FIRST 5 ROWS ONLY
+"""
+
+# Wyświetlanie na mapie analogicznie, jak przykładach w parzystych zadaniach powyżej
 ```
+
+Zrut ekranu:
+
+![alt text](image-14.png)
+
+
+Komentarz:
+W przykładzie podajemy zapytanie, które zwraca i umożliwia wyświetlenie na mapie 5 największych parków narodowych (z tabeli `us_parks`) w Stanach Zjednoczonych. Poniżej lista ich nazw wraz polem powierzni w km^2:\
+Wrangell-St. Elias NP and NPRE 53370.0142890794\
+Gates of the Arctic NP & NPRES 34280.9722577574\
+Noatak NPRES 26582.3201923589\
+Denali NP and NPRES 24398.5944663352\
+Katmai NP and NPRES 16561.6337361726
+
+Przykład 2
+
+>Wyniki, zrzut ekranu, komentarz
+
+```python
+query_longest_river_in_texas = """
+SELECT r.name, SDO_GEOM.SDO_LENGTH(r.geom, 0.005, 'unit=KM') as length, sdo_util.to_wktgeometry(r.geom)
+FROM us_rivers r, us_states s
+WHERE s.state = 'Texas' AND SDO_ANYINTERACT(r.geom, s.geom) = 'TRUE'
+ORDER BY length DESC
+FETCH FIRST ROW ONLY
+"""
+
+# Wyświetlanie na mapie analogicznie, jak przykładach w parzystych zadaniach powyżej
+```
+
+Zrut ekranu:
+
+![alt text](image-15.png)
+
+Komentarz:
+W przykładzie podajemy zapytanie, które zwraca i umożliwia wyświetlenie na najdłuższą rzekę przepływającą przez stan Texas (Rio Grande, 2397.13 km).
+
+
+Przykład 3
+
+>Wyniki, zrzut ekranu, komentarz
+
+```python
+query_nearest_parks_to_la = """
+SELECT p.name, SDO_GEOM.SDO_DISTANCE(p.geom, c.location, 0.005, 'unit=KM') as distance, sdo_util.to_wktgeometry(p.geom)
+FROM us_parks p, us_cities c
+WHERE c.city = 'Los Angeles'
+ORDER BY distance
+FETCH FIRST 5 ROWS ONLY
+"""
+
+# Wyświetlanie na mapie analogicznie, jak przykładach w parzystych zadaniach powyżej
+```
+
+Zrut ekranu:
+
+![alt text](image-16.png)
+
+Komentarz:
+W przykładzie podajemy zapytanie, które zwraca i umożliwia wyświetlenie na mapie 5 parków narodowych najbliższych Los Angeles (Santa Monica, Mountains NRA,
+Angeles NF,
+Los Padres NF,
+Kenney Grove Park,
+Toland Park), niewykorzystujące funkcji `SDO_NN`.
+
+
+
+
+
+
+
+
+
 
 Punktacja
 
