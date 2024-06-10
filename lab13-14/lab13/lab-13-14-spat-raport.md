@@ -419,14 +419,21 @@ Znajdź wszystkie miasta w odległości 50 mili od drogi (us_interstates) I4
 Pokaż wyniki na mapie
 
 ```sql
-SELECT c.city, c.state_abrv, c.location 
-FROM us_cities c
-WHERE ROWID IN 
-( 
-    SELECT c.rowid
-    FROM us_interstates i, us_cities c 
-    WHERE i.interstate = 'I4'
-    AND SDO_WITHIN_DISTANCE (c.location, i.geom, 'distance=50 unit=mile') = 'TRUE'
+SELECT * FROM us_interstates 
+WHERE interstate = 'I4' 
+ 
+SELECT * FROM us_states 
+WHERE state_abrv = 'FL' 
+ 
+SELECT c.city, c.state_abrv, c.location  
+FROM us_cities c 
+WHERE ROWID IN  
+(  
+SELECT c.rowid 
+FROM us_interstates i, us_cities c  
+WHERE i.interstate = 'I4' 
+AND sdo_within_distance (c.location, i.geom,'distance=50 unit=mile') 
+= 'TRUE'  
 );
 ```
 ![img_9.png](img_9.png)
@@ -450,29 +457,69 @@ f)      Itp. (własne przykłady)
 
 ```sql
 --- Znajdź wszystkie jednostki administracyjne przez które przechodzi droga I4
+SELECT c.county, c.geom 
+FROM us_counties c 
+WHERE EXISTS ( 
+    SELECT 1 
+    FROM us_interstates i 
+    WHERE i.interstate = 'I4' 
+    AND sdo_relate(c.geom, i.geom, 'mask=ANYINTERACT') = 'TRUE' 
+) 
+```
+![img_21.png](img_21.png)
 
-SELECT s.*
-FROM us_states s, us_interstates i
-WHERE SDO_RELATE(s.geom, i.geom, 'mask=INSIDE') = 'TRUE' AND i.interstate = 'I4';
+Droga ta znajduje sie na Florydzie. Znajduje sie na terytorium 6 hrabstw.
+
+```sql
 
 --- Znajdź wszystkie jednostki administracyjne w pewnej odległości od I4
-
-SELECT s.*
-FROM us_states s, us_interstates i
-WHERE SDO_WITHIN_DISTANCE(s.geom, i.geom, 'distance=50 unit=mile') = 'TRUE' AND i.interstate = 'I4';
-
+ SELECT c.county, c.state_abrv, c.geom 
+FROM us_counties c 
+WHERE EXISTS ( 
+    SELECT 1 
+    FROM us_interstates i 
+    WHERE i.interstate = 'I4' 
+    AND SDO_WITHIN_DISTANCE(c.geom, i.geom, 'distance=100 unit=mile') = 'TRUE' 
+);
+```
+![img_22.png](img_22.png)
+```sql
 --- Znajdź rzeki które przecina droga I4
+WITH intersecting_rivers AS ( 
+    SELECT r.name, r.geom 
+    FROM us_rivers r 
+    WHERE EXISTS ( 
+        SELECT 1 
+        FROM us_interstates i 
+        WHERE i.interstate = 'I4' 
+        AND SDO_RELATE(r.geom, i.geom, 'mask=ANYINTERACT') = 'TRUE' 
+    ) 
+) 
+SELECT name, geom 
+FROM intersecting_rivers
+```
+![img_23.png](img_23.png)
 
-SELECT r.*
-FROM us_rivers r, us_interstates i
-WHERE SDO_RELATE(r.geom, i.geom, 'mask=ANYINTERACT') = 'TRUE' AND i.interstate = 'I4';
-
+Droga I4 przecina rzekę St.Johnsa.
+```sql
 --- Znajdź wszystkie drogi które przecinają rzekę Mississippi
+WITH intersecting_highways AS ( 
+    SELECT i.interstate, i.geom 
+    FROM us_interstates i 
+    WHERE EXISTS ( 
+        SELECT 1 
+        FROM us_rivers r 
+        WHERE r.name = 'Mississippi' 
+        AND SDO_RELATE(i.geom, r.geom, 'mask=ANYINTERACT') = 'TRUE' 
+    ) 
+) 
+SELECT interstate, geom 
+FROM intersecting_highways;
+```
+![img_24.png](img_24.png)
 
-SELECT i.*
-FROM us_interstates i, us_rivers r
-WHERE SDO_RELATE(i.geom, r.geom, 'mask=ANYINTERACT') = 'TRUE' AND r.river_name = 'Mississippi';
-
+Znalazeiono 15 dróg, które przecinają rzekę Mississippi.
+```sql
 --- Znajdź wszystkie miasta w odległości od 15 do 30 mil od drogi 'I275'
 
 SELECT c.*
@@ -480,22 +527,34 @@ FROM us_cities c, us_interstates i
 WHERE SDO_WITHIN_DISTANCE(c.location, i.geom, 'distance=15 unit=mile') = 'TRUE' 
 AND SDO_WITHIN_DISTANCE(c.location, i.geom, 'distance=30 unit=mile') = 'TRUE'
 AND i.interstate = 'I275';
+```
+![img_25.png](img_25.png)
 
+W bazie znajduj się miasta Sterling Heights, Detroit, Toledo, Warren. Wszystkie z nich dotycz części drogi znajdującej się w stanie "Michigan"
+```sql
 --- Wlasne przykłady
---- Znajdź wszystkie parki narodowe w odległości 25 mil od drogi krajowej nr 1.
+--- Znajdź wszystkie wszystkie stany, przez które przebiegają maksymalnie 2 autostrady.
+SELECT s.state, s.state_abrv 
+FROM us_states s 
+WHERE ( 
+    SELECT COUNT(DISTINCT i.interstate) 
+    FROM us_interstates i 
+    WHERE SDO_RELATE(s.geom, i.geom, 'mask=ANYINTERACT') = 'TRUE' 
+) < 3; 
+```
+![img_26.png](img_26.png)
 
-SELECT p.*
-FROM us_parks p, us_highways h
-WHERE SDO_WITHIN_DISTANCE(p.geom, h.geom, 'distance=25 unit=mile') = 'TRUE' AND h.highway_name = 'US-1';
-
---- Znajdź wszystkie lotniska w obrębie stanu Kalifornia.
-
-SELECT a.*
+Są to Nevada, Hawaii, Alaka, American Samoa, Guam, Northern Mariana Talands, Puero Rico, Virgin Islands.
+```sql
+--- Znajdź wszystkie parki, które znajują się w odległości nie większej niż 120 mil od miasta Las Vegas: 
+SELECT name, geom FROM us_parks
+WHERE EXISTS ( 
+SELECT 1 FROM us_ciies WHERE city = 'Las Vegas'
+AND SDO_WITHIN_DISTANCE(geom, (SELECT location FROM us_cities))
 FROM us_airports a, us_states s
 WHERE SDO_CONTAINS(s.geom, a.location) = 'TRUE' AND s.state_name = 'California';
-
 ```
-
+![img_27.png](img_27.png)
 
 # Zadanie 6
 
@@ -788,24 +847,17 @@ d)    Które stany mają najdłuższą granicę
 
 e)    Itp. (własne przykłady)
 
-
-
 ```sql
 --- Oblicz długość rzeki Mississippi
-SELECT SUM(SDO_GEOM.SDO_LENGTH(geom, 0.5, 'unit=kilometer')) AS total_length
-FROM us_rivers
-WHERE SYSTEM = 'Mississippi';
-```
-
-![img_11.png](img_11.png)
-
-```sql
---- Oblicz długość rzeki Mississippi
-SELECT SUM(SDO_GEOM.SDO_LENGTH(geom, 0.5, 'unit=kilometer')) AS total_length
-FROM us_rivers
-WHERE SYSTEM = 'Mississippi';
+SELECT r.name, SDO_GEOM.SDO_LENGTH(r.geom, 0.005, 'unit=kilometer') AS length 
+FROM us_rivers r 
+WHERE r.name = 'Mississippi'; 
 
 ```
+
+![img_28.png](img_28.png)
+
+Długość rzeki Mississippi wynosi 3860 kilometrów.
 
 ```sql
 -- Która droga jest najdłuższa/najkrótsza
@@ -835,8 +887,6 @@ to I90, jej długość to 4290.64 km.
 
 to I564, jej długość to 0.462km
 
-
-![img_12.png](img_12.png)
 
 ```sql
 -- Najdłuższa rzeka
@@ -883,6 +933,7 @@ SELECT SDO_GEOM.SDO_DISTANCE ( c1.location, c2.location, 0.5) distance
 FROM us_cities c1, us_cities c2
 WHERE c1.city = 'Buffalo' and c2.city = 'Syracuse';
 ```
+![img_12.png](img_12.png)
 
 Odległość między miastami Buffalo i Syracuse to 222184,61 km
 
@@ -927,9 +978,9 @@ WHERE s1.state_name = 'New York' AND s2.state_name = 'Florida';
 
 ```
 
-![img_19.png](img_19.png)
+![img_30.png](img_30.png)
 
-Odległość między stanem Nowy Jork a Florydą to 1256583.87 km
+Odległość między stanem Nowy Jork a Florydą to 1296.59 km
 
 ```sql
 --- Jaka jest odległość z między miastem Nowy Jork a  Florydą
@@ -938,22 +989,42 @@ FROM us_cities c1, us_cities c2
 WHERE c1.city = 'New York' AND c2.city = 'Florida';
 
 ```
+![img_31.png](img_31.png)
 
-Odległość między Nowym Jorkiem a Florydą zależy od konkretnych miast w tych stanach. Na przykład, odległość między Nowym Jorkiem a Miami wynosi około 2,060 kilometrów w linii prostej. Jednak jeśli chodzi o odległość drogową, zazwyczaj jest to około około 2,060-2,090 kilometrów.
+Odległość między Nowym Jorkiem a Florydą zależy od konkretnych miast w tych stanach. Na przykład, odległość między Nowym Jorkiem a Miami wynosi około 1256 kilometrów w linii prostej. Jednak jeśli chodzi o odległość drogową, zazwyczaj jest to około około 2,060-2,090 kilometrów.
 
 ```sql
 --- Podaj 3 parki narodowe do których jest najbliżej z Nowego Jorku, oblicz odległości do tych parków
-SELECT p.name, SDO_GEOM.SDO_DISTANCE(c.location, p.geom, 0.5) AS distance_km
-FROM us_cities c, us_parks p
-WHERE c.city = 'New York'
-ORDER BY distance_km
-FETCH FIRST 3 ROWS ONLY;
+SELECT p.name, SDO_GEOM.SDO_DISTANCE ( c.location, p.geom, 0.5, 'unit=kilometer') distance 
+FROM us_parks p, us_cities c  
+WHERE c.city = 'New York' 
+AND sdo_nn(c.location, p.geom, 'sdo_num_res=3') = 'TRUE' 
+ORDER BY distance  
+FETCH FIRST 3 ROW ONLY 
 
 ```
 
-![img_20.png](img_20.png)
+![img_32.png](img_32.png)
 
 3 parki narodowe do których jest najbliżej z Nowego Jorku to ```Institute Park```, ```Prospect Park``` oraz ```Thompkins Park```.
+
+
+---
+`sdo_intersection`: Oblicza przecięcie dwóch geometrii, zwracając wspólny obszar.
+
+`sdo_union`: Oblicza sumę dwóch geometrii, zwracając obszar obejmujący oba obiekty.
+
+`sdo_difference`: Oblicza różnicę między dwiema geometriami, zwracając obszar pierwszej geometrii bez części wspólnej z drugą.
+
+`sdo_buffer`: Tworzy bufor wokół danej geometrii, będący obszarem w określonej odległości od jej krawędzi.
+
+`sdo_centroid`: Oblicza centroid geometrii, czyli jej środek ciężkości.
+
+`sdo_mbr`: Oblicza najmniejszy prostokąt otaczający (MBR) daną geometrię.
+
+`sdo_convexhull`: Oblicza otoczkę wypukłą geometrii, czyli najmniejszy wypukły obszar zawierający całą geometrię.
+
+`sdo_simplify`: Upraszcza geometrię, usuwając zbędne detale zgodnie z określoną tolerancją.
 
 ```sql
 -- SDO_INTERSECTION: Zwraca część wspólną dwóch geometrii
